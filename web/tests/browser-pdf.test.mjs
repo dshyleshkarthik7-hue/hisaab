@@ -32,6 +32,10 @@ try{
  await page.locator("#sim").evaluate(form=>form.requestSubmit());
  try{await page.locator("#out:not([hidden])").waitFor({timeout:60000});}catch(error){console.log(JSON.stringify({pageErrors,consoleErrors,failedRequests,errorBox:await page.locator("#err").textContent(),runButton:await page.locator("#run").textContent(),goals:await page.locator(".goal-row").count()}));throw error;}
  await page.locator("#nudgeCard:not([hidden])").waitFor({timeout:60000});
+ await page.locator("#runScenarios").click();
+ await page.locator("#findTargetSip").waitFor({state:"visible",timeout:60000});
+ await page.locator("#findTargetSip").click();
+ await page.waitForFunction(()=>document.querySelector("#targetSip")?.textContent?.includes("Estimated SIP"),{timeout:60000});
  const [download]=await Promise.all([
   page.waitForEvent("download",{timeout:60000}),
   page.locator("#pdfReport").click()
