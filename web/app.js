@@ -590,3 +590,54 @@ loadOfficialData();
     }
   }, true); // capture so we run early
 })();
+
+
+// Shareable, reproducible scenario links and one-click household presets.
+(function () {
+  const form = document.getElementById("sim");
+  const field = (name) => form && form.elements.namedItem(name);
+  const personas = {
+    grad: {years:20,savings:100000,income:55000,expense:28000,sip:12000,ret:10,vol:18,income_growth:8,medical_shock:250000,goals:[{name:"Higher education",at:6,cost:800000,kind:"education",flex:true}]},
+    family: {years:20,savings:1200000,income:160000,expense:85000,sip:40000,ret:10,vol:16,income_growth:8,medical_shock:600000,goals:[{name:"Child education",at:12,cost:3000000,kind:"education",flex:false},{name:"Home upgrade",at:8,cost:1800000,kind:"home",flex:true}]},
+    single: {years:18,savings:700000,income:90000,expense:65000,sip:18000,ret:9,vol:20,income_growth:6,medical_shock:800000,goals:[{name:"Family safety reserve",at:5,cost:1200000,kind:"medical",flex:false},{name:"Retirement bridge",at:18,cost:4500000,kind:"general",flex:false}]}
+  };
+  function applyState(state) {
+    if (!form || !state || typeof state !== "object") return;
+    ["years","savings","income","expense","sip","ret","vol","income_growth","medical_shock","seed"].forEach(k => {
+      if (state[k] !== undefined && field(k)) field(k).value = state[k];
+    });
+    if (field("shocks") && state.shocks !== undefined) field("shocks").checked = !!state.shocks;
+    if (Array.isArray(state.goals) && state.goals.length) {
+      document.getElementById("goals").replaceChildren();
+      state.goals.slice(0,12).forEach(goal => goalRow(goal));
+    }
+    if (Array.isArray(state.events)) {
+      document.getElementById("events").replaceChildren();
+      state.events.slice(0,20).forEach(event => addEventRow(event));
+    }
+  }
+  document.querySelectorAll("[data-persona]").forEach(button => {
+    button.addEventListener("click", () => {
+      applyState({...personas[button.dataset.persona],seed:20261112,shocks:true,events:[]});
+      form.scrollIntoView({behavior:"smooth",block:"start"});
+    });
+  });
+  const share = document.getElementById("shareScenario");
+  if (share) share.addEventListener("click", async () => {
+    if (!lastInput) { alert("Run a simulation before sharing."); return; }
+    const payload = {...lastInput, seed:lastInput.seed ?? Number(field("seed").value), shocks:lastInput.shocks ?? field("shocks").checked};
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+    const url = location.origin + location.pathname + "#s=" + encoded;
+    history.replaceState(null,"",url);
+    try { await navigator.clipboard.writeText(url); share.textContent = "Link copied"; }
+    catch (_) { share.textContent = "Link ready in address bar"; }
+  });
+  if (location.hash.startsWith("#s=")) {
+    try {
+      let encoded=location.hash.slice(3).replace(/-/g,"+").replace(/_/g,"/");
+      encoded += "=".repeat((4-encoded.length%4)%4);
+      const state=JSON.parse(decodeURIComponent(escape(atob(encoded))));
+      applyState(state);
+    } catch (_) { /* Ignore malformed or manually edited shared links. */ }
+  }
+})();
