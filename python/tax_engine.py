@@ -4,6 +4,7 @@ Deterministic calculations only. AI must never invent slabs or rebates.
 """
 from __future__ import annotations
 from dataclasses import dataclass, asdict
+import math
 from typing import Any
 
 # Verified rule pack for Tax Year 2026–27 (new regime default path used by Hisaab).
@@ -97,8 +98,10 @@ def compute_tax(
     For new regime, taxable_income should already reflect standard deduction.
     For old regime, chapter_via_deductions reduces taxable income further.
     """
-    if taxable_income < 0 or not (taxable_income == taxable_income):  # NaN check
+    if isinstance(taxable_income, bool) or not isinstance(taxable_income, (int, float)) or not math.isfinite(taxable_income) or taxable_income < 0:
         raise ValueError("taxable_income must be a non-negative finite number")
+    if isinstance(chapter_via_deductions, bool) or not isinstance(chapter_via_deductions, (int, float)) or not math.isfinite(chapter_via_deductions) or chapter_via_deductions < 0:
+        raise ValueError("chapter_via_deductions must be a non-negative finite number")
     rules = get_rules(tax_year, regime)
     base = max(0.0, taxable_income - (chapter_via_deductions if regime == "old" else 0.0))
 
