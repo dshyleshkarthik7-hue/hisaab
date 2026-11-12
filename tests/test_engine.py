@@ -102,5 +102,17 @@ class EngineTests(unittest.TestCase):
         result = engine.target_sip(BASE, engine.simulate(BASE, trials=300))
         self.assertGreaterEqual(result["additional_monthly_sip"], 0)
 
+
+    def test_ingestion_rejects_path_traversal(self):
+        import ingestion
+        with self.assertRaises(ValueError):
+            ingestion.approve_candidate("../outside.json")
+
+    def test_new_regime_marginal_relief_is_applied_before_cess(self):
+        import tax_engine
+        taxable = 1_200_001
+        result = tax_engine.compute_tax(taxable, regime="new")
+        self.assertLessEqual(result["total_tax"], (taxable - 1_200_000) * 1.04 + 0.01)
+
 if __name__ == "__main__":
     unittest.main()
