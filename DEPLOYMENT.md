@@ -99,3 +99,38 @@ The tax and CTC tools are simplified educational estimates, not a tax-return com
 - Uptime/error monitoring, alert routing, incident response and secret-rotation procedure.
 - Restore test for the persistent disk and documented retention/deletion policy.
 - Load test at expected concurrency and a capacity decision before adding more instances.
+
+
+## Cloudflare Pages (static browser build)
+
+The static migration is developed on `migration/cloudflare-full-static` and tracked in [PR #13](https://github.com/dshyleshkarthik7-hue/hisaab/pull/13). It keeps simulation, calculators and Mitra in the browser; the Pages build output is `web`.
+
+### Build and preview locally
+
+```bash
+cd web
+npm install
+npm run build
+python -m http.server 8788
+```
+
+Open `http://localhost:8788`. The CI pipeline runs the Python reference suite, cross-language simulation and tax fixtures, TypeScript build, a 10,000-trial × 40-year baseline benchmark, a 4× CPU-throttled Chromium core benchmark, and a mobile-viewport PDF download/text-extraction test. Latest observed results: 3.56 s for the 10k × 40-year Worker run and 12.27 s for the same core simulation at 4× CPU throttling; browser viewport 390×844. This is a throttled browser proxy, not a physical-device test. The Scenario Lab and target-SIP bisection are on-demand actions so a 10k-trial baseline does not automatically trigger dozens of additional simulations.
+
+### Deploy after the migration is approved and merged
+
+1. Create a Cloudflare Pages project named `hisaab` and connect the repository, or use the manual workflow below.
+2. In GitHub repository settings, configure the `preview` and `production` environments with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Use a scoped token with Cloudflare Pages deployment permissions.
+3. From the migration branch, run **Actions → Deploy Hisaab preview to Cloudflare Pages → Run workflow**. This creates a branch preview at `migration-cloudflare-full-static.hisaab.pages.dev` if the Pages project exists.
+4. Review the preview, including simulation, PDF download and mobile layout. Merge the migration only after financial-model, tax and browser/PDF acceptance reviews are complete.
+5. On the `main` branch, run **Actions → Deploy Hisaab to Cloudflare Pages → Run workflow**. The workflow is intentionally manual and refuses to deploy from a non-main branch.
+6. Verify the generated `https://hisaab.pages.dev` URL, then attach the intended custom domain in Cloudflare Pages → Custom domains. Confirm the zone is active in the same Cloudflare account and follow Cloudflare's DNS instructions; do not guess or overwrite existing DNS records.
+
+No Cloudflare credentials are stored in this repository. No production deployment or DNS modification has been performed from this migration branch.
+
+### PDF behavior
+
+The browser-only build generates and downloads an A4 PDF directly with pdfnative. It bundles Noto Telugu and Noto Sans font data, uses the Telugu OpenType shaper, and includes simulation summary, inputs, goals, scenario comparisons, target-SIP analysis, paired shock counterfactuals and annual corpus bands. The Chromium smoke test generates a Telugu-language report and verifies its extracted Unicode text. Check page breaks and visual shaping on supported physical devices before production sign-off.
+
+### Static-build scope
+
+The browser build does not run the old server-side ingestion queue, admin endpoints or external LLM integration. It deliberately displays primary-source links instead of fabricating live rates, and Mitra uses local grounded explanations. Those operational features require separately designed Cloudflare Functions/storage/secrets and are not silently emulated by static assets.

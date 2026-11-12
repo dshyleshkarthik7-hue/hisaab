@@ -1,14 +1,19 @@
 {
   "name": "hisaab-web",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Hisaab household-finance simulator frontend",
+  "description": "Hisaab browser-only household finance simulator",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && esbuild app.js --bundle --format=esm --target=es2022 --outfile=app.bundle.js && esbuild src/workers/simulation.worker.js --bundle --format=esm --target=es2022 --outfile=src/workers/simulation.worker.bundle.js",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "node --check app.js"
+    "test": "npm run build && node --check app.bundle.js && node --check src/workers/simulation.worker.bundle.js"
   },
   "devDependencies": {
-    "typescript": "5.7.3"
+    "typescript": "5.7.3",
+    "esbuild": "0.25.11",
+    "playwright": "1.56.1"
+  },
+  "dependencies": {
+    "pdfnative": "1.9.0"
   }
 }

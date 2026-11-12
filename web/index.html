@@ -32,6 +32,7 @@
       <form id="sim" novalidate>
         <div class="field-grid">
           <label>Years to explore <input name="years" type="number" value="20" min="1" max="40" required><small>How far into the future?</small></label>
+          <label>Simulation trials <input name="trials" type="number" value="2000" min="100" max="10000" step="100" required><small>100–10,000 independent paths; more trials take longer</small></label>
           <label>Current savings <span class="unit">₹</span><input name="savings" type="number" value="500000" min="0" step="1000" required><small>Investable corpus today</small></label>
           <label>Monthly take-home income <span class="unit">₹</span><input name="income" type="number" value="100000" min="0" step="1000" required><small>Income available after tax</small></label>
           <label>Monthly household expenses <span class="unit">₹</span><input name="expense" type="number" value="50000" min="0" step="500" required><small>Living costs, before goal spending</small></label>
@@ -51,7 +52,7 @@
           <p class="section-note">Test a recurring income or expense change, or a one-time cost in a future year. Events are applied at the start of the selected year.</p>
           <div id="events" class="events-list"></div>
         </div>
-        <div class="run-row"><div><strong>2,000 simulated lives</strong><small>Reuse the seed for repeatable comparisons; change it to explore a different scenario set.</small></div><button type="submit" id="run" class="button button-primary">Run the futures <span>↗</span></button></div>
+        <div class="run-row"><div><strong id="trialCount">2,000 simulated lives</strong><small>Reuse the seed for repeatable comparisons; change it to explore a different scenario set.</small></div><button type="submit" id="run" class="button button-primary">Run the futures <span>↗</span></button></div>
       </form>
       <p id="err" class="error" role="alert" hidden></p>
     </section>
@@ -72,8 +73,8 @@
           <p class="eyebrow">SCENARIO LAB</p>
           <h3 id="nudgeTitle">Three-way scenario comparison</h3>
           <p id="nudgeText">Baseline and two alternatives using the exact same random lives.</p>
-          <div id="compareGrid" class="compare-grid" role="list"></div>
-          <small>Compared with the baseline using the same random scenarios. Scenario results, not personalised advice.</small>
+          <div id="compareGrid" class="compare-grid" role="list"></div><div class="scenario-actions"><button id="runScenarios" class="button button-secondary" type="button">Run four-way comparison</button><button id="findTargetSip" class="button button-secondary" type="button" hidden>Find SIP for 85% success</button></div>
+          <div id="targetSip" class="scenario-detail" aria-live="polite"></div><div id="shockComparison" class="scenario-detail" aria-live="polite"></div><small>Compared with the baseline using the same random scenarios. Scenario results, not personalised advice.</small>
         </div>
       </article>
       <p class="model-note"><strong>Model transparency:</strong> monthly cash-flow checks, category-specific goal inflation (general 6%, education 10%, medical 8%, home 5.5% annual averages), six-month job-loss events and medical shocks. Investment returns use a lognormal monthly approximation calibrated to the stated annual return and volatility. Real markets, taxes, insurance, debt, asset allocation and personal circumstances are more complex.</p>
@@ -82,7 +83,7 @@
     <section class="section-head tools-heading"><div><p class="eyebrow">04 / QUICK CHECKS</p><h2>Everyday money maths</h2></div><span class="step-tag">Quick calculators</span></section>
     <section class="tools">
       <article class="panel tool-card"><p class="eyebrow">BORROWING</p><h3>Loan EMI</h3><div class="field-grid compact"><label>Loan amount <span class="unit">₹</span><input id="loan" type="number" value="5000000" min="0"></label><label>Annual interest <span class="unit">%</span><input id="rate" type="number" value="8.75" min="0" max="100" step="0.05"></label><label>Tenure <span class="unit">years</span><input id="ly" type="number" value="20" min="0.1" max="40" step="0.1"></label></div><p id="emiOut" class="tool-result">Enter loan details.</p></article>
-      <article class="panel tool-card"><p class="eyebrow">SALARY ESTIMATE</p><h3>Take-home salary</h3><div class="field-grid compact"><label>Annual CTC <span class="unit">₹</span><input id="ctc" type="number" value="1500000" min="0" max="5000000" step="1000"></label><label>Basic pay <span class="unit">%</span><input id="basic" type="number" value="40" min="0" max="100"></label><label>Professional tax / month <span class="unit">₹</span><input id="pt" type="number" value="200" min="0" max="5000"></label></div><p id="taxOut" class="tool-result">Enter salary details.</p><small class="tiny-note">Illustrative Tax Year 2026–27 new-regime estimate for CTC up to ₹50 lakh. Assumes a resident individual eligible for Section 87A, PF at 12% of basic, ₹75,000 standard deduction and editable professional tax. Actual payroll, exemptions and eligibility can differ.</small></article>
+      <article class="panel tool-card"><p class="eyebrow">SALARY ESTIMATE</p><h3>Take-home salary</h3><div class="field-grid compact"><label>Annual CTC <span class="unit">₹</span><input id="ctc" type="number" value="1500000" min="0" max="5000000" step="1000"></label><label>Basic pay <span class="unit">%</span><input id="basic" type="number" value="40" min="0" max="100"></label><label>Professional tax / month <span class="unit">₹</span><input id="pt" type="number" value="200" min="0" max="5000"></label><label>Old-regime eligible deductions / year <span class="unit">₹</span><input id="deductions" type="number" value="150000" min="0" max="5000000" step="1000"></label></div><p id="taxOut" class="tool-result">Enter salary details.</p><p id="regimeOut" class="tool-result">Compare old and new tax regimes.</p><small class="tiny-note">Illustrative Tax Year 2026–27 new-regime estimate for CTC up to ₹50 lakh. Assumes a resident individual eligible for Section 87A, PF at 12% of basic, ₹75,000 standard deduction and editable professional tax. Actual payroll, exemptions and eligibility can differ.</small></article>
     </section>
   </main>
   
@@ -113,5 +114,5 @@
 
   <footer><span>हिसाब · HISAAB</span><span>Built to make uncertainty visible.</span><span>Household-finance scenario simulator · Not personalised investment advice</span></footer>
 </div>
-<script src="app.js" defer></script>
+<script type="module" src="app.bundle.js"></script>
 </body></html>

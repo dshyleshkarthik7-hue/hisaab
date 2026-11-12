@@ -1,0 +1,2 @@
+# The application is a single static document. Keep explicit paths only.
+# No API proxy or backend fallback is configured.
