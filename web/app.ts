@@ -155,17 +155,17 @@ function show(r: Result): void {
 
 $("runScenarios").addEventListener("click",async()=>{
   if(!lastInput||!lastResult)return;
-  const button=$("runScenarios") as HTMLButtonElement;button.disabled=true;button.textContent=language==="te"?"సన్నివేశాలను లెక్కిస్తోంది…":"Running scenario comparisons…";
+  const button=$("runScenarios") as HTMLButtonElement;button.disabled=true;($("run") as HTMLButtonElement).disabled=true;button.textContent=language==="te"?"సన్నివేశాలను లెక్కిస్తోంది…":"Running scenario comparisons…";
   try{const result=await runInWorker(lastInput,"scenarios",lastResult);lastResult.nudge=result as NudgePayload;show(lastResult);}
   catch(error){$("err").textContent="Scenario comparison failed: "+(error as Error).message;$("err").hidden=false;}
-  finally{button.disabled=false;$("run").replaceChildren(document.createTextNode("Run the futures "),el("span","","↗"));}
+  finally{button.disabled=false;($("run") as HTMLButtonElement).disabled=false;$("run").replaceChildren(document.createTextNode("Run the futures "),el("span","","↗"));}
 });
 $("findTargetSip").addEventListener("click",async()=>{
   if(!lastInput||!lastResult)return;
-  const button=$("findTargetSip") as HTMLButtonElement;button.disabled=true;button.textContent=language==="te"?"SIP లక్ష్యాన్ని లెక్కిస్తోంది…":"Finding target SIP…";
+  const button=$("findTargetSip") as HTMLButtonElement;button.disabled=true;($("run") as HTMLButtonElement).disabled=true;button.textContent=language==="te"?"SIP లక్ష్యాన్ని లెక్కిస్తోంది…":"Finding target SIP…";
   try{const target=await runInWorker(lastInput,"target",lastResult);lastResult.nudge={...(lastResult.nudge as NudgePayload),target_sip:target};show(lastResult);}
   catch(error){$("err").textContent="Target SIP search failed: "+(error as Error).message;$("err").hidden=false;}
-  finally{button.disabled=false;$("run").replaceChildren(document.createTextNode("Run the futures "),el("span","","↗"));}
+  finally{button.disabled=false;($("run") as HTMLButtonElement).disabled=false;$("run").replaceChildren(document.createTextNode("Run the futures "),el("span","","↗"));}
 });
 
 $("sim").addEventListener("submit", async event => {
