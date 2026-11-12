@@ -175,16 +175,29 @@ def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=
         for i,ok in enumerate(success): hits[i]+=int(ok); failures[i]+=int(not ok)
         ok=all(success); all_hits+=int(ok); shock_failures+=int(not ok and had_shock)
         depleted+=int(equity+safe+sum(reserves)<=.01)
-        if trial<24: samples.append({"ok":ok,"shocked":had_shock,"shock_events":shock_events,"values":path,"ending":equity+safe+sum(reserves)})
+        samples.append({"ok":ok,"shocked":had_shock,"shock_events":shock_events,"values":path,"ending":equity+safe+sum(reserves)})
     fan=[{"p10":round(percentile(v,.10),2),"p50":round(percentile(v,.50),2),"p90":round(percentile(v,.90),2)} for v in yearly]
     if samples:
-        lo=min(range(len(samples)),key=lambda i:samples[i]["ending"])
-        survivors=[i for i,x in enumerate(samples) if x["ok"]]
-        worst_survivor=min(survivors,key=lambda i:samples[i]["ending"]) if survivors else None
-        mid=sorted(range(len(samples)),key=lambda i:samples[i]["ending"])[len(samples)//2]
-        shock=next((i for i,x in enumerate(samples) if x["shocked"]),lo)
-        for i,x in enumerate(samples):
-            x["label"]="worst_surviving" if i==worst_survivor else "median" if i==mid else "depleted_or_shocked" if i==shock else "sample"
+        all_samples=samples
+        ordered=sorted(range(len(all_samples)),key=lambda i:all_samples[i]["ending"])
+        survivors=[i for i,x in enumerate(all_samples) if x["ok"]]
+        worst_survivor=min(survivors,key=lambda i:all_samples[i]["ending"]) if survivors else None
+        mid=ordered[len(ordered)//2]
+        shock=next((i for i,x in enumerate(all_samples) if x["shocked"]),ordered[0])
+        special={i for i in (worst_survivor,mid,shock) if i is not None}
+        quantiles={ordered[round(k*(len(ordered)-1)/23)] for k in range(24)}
+        chosen=special | quantiles
+        while len(chosen)>24:
+            removable=next((i for i in sorted(chosen,reverse=True) if i not in special),None)
+            if removable is None: break
+            chosen.remove(removable)
+        if len(chosen)<24:
+            for i in ordered:
+                chosen.add(i)
+                if len(chosen)==24: break
+        samples=[all_samples[i] for i in sorted(chosen)]
+        for x in samples:
+            x["label"]="worst_surviving" if worst_survivor is not None and x is all_samples[worst_survivor] else "median" if x is all_samples[mid] else "depleted_or_shocked" if x is all_samples[shock] else "sample"
             del x["ending"]
     failed=max(1,n-all_hits)
     weakest=min(({"name":g["name"],"odds":hits[i]/n} for i,g in enumerate(goals)),key=lambda x:x["odds"])
