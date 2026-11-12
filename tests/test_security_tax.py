@@ -7,6 +7,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "python"))
 import ingestion
 import tax_engine
+import llm_provider
 
 
 class SecurityAndTaxTests(unittest.TestCase):
@@ -45,6 +46,12 @@ class SecurityAndTaxTests(unittest.TestCase):
             with patch.object(ingestion, "CANDIDATES", candidates), patch.object(ingestion, "APPROVED", approved):
                 with self.assertRaises(ValueError):
                     ingestion.approve_candidate("candidate.json")
+
+    def test_external_llm_requires_explicit_opt_in(self):
+        with patch.object(llm_provider, "ENABLED", False), patch.object(llm_provider, "PROVIDER", "gemini"), patch.object(llm_provider, "API_KEY", "test-key"):
+            self.assertFalse(llm_provider.available())
+        with patch.object(llm_provider, "ENABLED", True), patch.object(llm_provider, "PROVIDER", "gemini"), patch.object(llm_provider, "API_KEY", "test-key"):
+            self.assertTrue(llm_provider.available())
 
     def test_marginal_relief_is_applied_before_cess(self):
         result = tax_engine.compute_tax(1_250_000, regime="new")
