@@ -48,7 +48,7 @@ Detailed equations, assumptions and limitations are documented in [`docs/MODEL.m
 
 ```bash
 python3 -m unittest discover -s tests -v
-python3 tests/smoke.py  # starts the complete stack; requires Java and tsc
+python3 tests/smoke.py  # starts the complete stack; requires Java (uses tsc when installed)
 ```
 
 The tests cover input validation, deterministic reproducibility, expense/income effects, goal inflation, cash depletion and basic engine invariants.
