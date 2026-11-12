@@ -305,11 +305,20 @@ function reportHtml(): string {
 function escapeHtml(value:string):string { return value.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!)); }
 $("addEvent").addEventListener("click",()=>addEventRow({label:language==="te"?"కొత్త సంఘటన":"New life event",year:3,kind:"income_change",amount:15000}));
 $("langToggle").addEventListener("click",()=>{ language=language==="en"?"te":"en"; translateStatic(); });
-$("pdfReport").addEventListener("click",()=>{
+$("pdfReport").addEventListener("click", async (ev) => {
   if (!lastInput || !lastResult) { alert(language==="te"?"ముందుగా సిమ్యులేషన్‌ను అమలు చేయండి.":"Run a simulation before creating your report."); return; }
-  const w=window.open("","_blank");
-  if (!w) { alert(language==="te"?"పాప్-అప్‌ను అనుమతించి మళ్లీ ప్రయత్నించండి.":"Allow the report pop-up and try again."); return; }
-  w.document.open(); w.document.write(reportHtml()); w.document.close();
+  ev.preventDefault();
+  try {
+    const res=await fetch("/api/report/pdf",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lang:language,inputs:lastInput,result:lastResult})});
+    if(!res.ok) throw new Error("PDF generation failed");
+    const blob=await res.blob(); const url=URL.createObjectURL(blob); const a=document.createElement("a");
+    a.href=url; a.download=language==="te"?"hisaab-nivadika.pdf":"hisaab-report.pdf";
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  } catch {
+    const w=window.open("","_blank");
+    if(w){w.document.open();w.document.write(reportHtml());w.document.close();}
+    else alert(language==="te"?"పాప్-అప్‌ను అనుమతించి మళ్లీ ప్రయత్నించండి.":"PDF service unavailable; allow the print window and retry.");
+  }
 });
 const originalShow = show;
 (show as any) = (result:Result) => { originalShow(result); lastResult=result; };
@@ -525,3 +534,51 @@ $("pdfReport").addEventListener("click", () => {
 
 renderMitraSuggestions();
 void loadOfficialData();
+
+
+// Shareable reproducible scenarios and editable illustrative quick-start examples.
+(function () {
+  const form = document.getElementById("sim") as HTMLFormElement | null;
+  const getField = (name: string): HTMLInputElement | HTMLSelectElement | null => {
+    const item = form?.elements.namedItem(name);
+    return item instanceof HTMLInputElement || item instanceof HTMLSelectElement ? item : null;
+  };
+  const personas: Record<string, any> = {
+    grad: {years:20,savings:100000,income:55000,expense:28000,sip:12000,ret:10,vol:18,income_growth:8,medical_shock:250000,goals:[{name:"Higher education",at:6,cost:800000,kind:"education",flex:true}]},
+    family: {years:20,savings:1200000,income:160000,expense:85000,sip:40000,ret:10,vol:16,income_growth:8,medical_shock:600000,goals:[{name:"Child education",at:12,cost:3000000,kind:"education",flex:false},{name:"Home upgrade",at:8,cost:1800000,kind:"home",flex:true}]},
+    single: {years:18,savings:700000,income:90000,expense:65000,sip:18000,ret:9,vol:20,income_growth:6,medical_shock:800000,goals:[{name:"Family safety reserve",at:5,cost:1200000,kind:"medical",flex:false},{name:"Retirement bridge",at:18,cost:4500000,kind:"general",flex:false}]}
+  };
+  const applyState = (state: any): void => {
+    if(!form || !state || typeof state!=="object") return;
+    ["years","savings","income","expense","sip","ret","vol","income_growth","medical_shock","seed"].forEach(k=>{
+      const input=getField(k); if(state[k]!==undefined && input) input.value=String(state[k]);
+    });
+    const shocks=getField("shocks"); if(shocks instanceof HTMLInputElement && state.shocks!==undefined) shocks.checked=!!state.shocks;
+    if(Array.isArray(state.goals) && state.goals.length){$("goals").replaceChildren();state.goals.slice(0,12).forEach((g:Goal)=>goalRow(g));}
+    if(Array.isArray(state.events)){$("events").replaceChildren();state.events.slice(0,20).forEach((e:LifeEvent)=>addEventRow(e));}
+  };
+  document.querySelectorAll<HTMLButtonElement>("[data-persona]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const sample=personas[button.dataset.persona||""]; if(!sample) return;
+      applyState({...sample,seed:20261112,shocks:true,events:[]});
+      form?.scrollIntoView({behavior:"smooth",block:"start"});
+    });
+  });
+  const share=document.getElementById("shareScenario");
+  if(share) share.addEventListener("click",async()=>{
+    if(!lastInput){alert("Run a simulation before sharing.");return;}
+    const payload={...lastInput,seed:lastInput.seed??Number(getField("seed")?.value),shocks:lastInput.shocks??(getField("shocks") as HTMLInputElement|null)?.checked};
+    const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");
+    const url=location.origin+location.pathname+"#s="+encoded; history.replaceState(null,"",url);
+    try{await navigator.clipboard.writeText(url);share.textContent="Link copied";}
+    catch{share.textContent="Link ready in address bar";}
+  });
+  if(location.hash.startsWith("#s=")){
+    try{
+      let encoded=location.hash.slice(3).replace(/-/g,"+").replace(/_/g,"/");
+      encoded+="=".repeat((4-encoded.length%4)%4);
+      applyState(JSON.parse(decodeURIComponent(escape(atob(encoded)))));
+      form?.requestSubmit();
+    }catch{/* Ignore malformed or manually edited share links. */}
+  }
+})();
