@@ -8,7 +8,7 @@ export interface MitraContext {
 }
 const rules=getRules();
 function taxExplanation(te:boolean){
- const lines=te?["పన్ను సంవత్సరం "+rules.tax_year+" — కొత్త పాలన (ఉదాహరణాత్మకం).","ప్రామాణిక మినహాయింపు ₹"+rules.standard_deduction.toLocaleString("en-IN")+"; 87A పరిమితి ₹"+rules.rebate_87a_limit.toLocaleString("en-IN")."స్లాబ్‌లు:"]:["Tax year "+rules.tax_year+" — new regime (illustrative).","Standard deduction ₹"+rules.standard_deduction.toLocaleString("en-IN")+"; Section 87A threshold ₹"+rules.rebate_87a_limit.toLocaleString("en-IN")+"." ,"Slabs:"];
+ const lines=te?["పన్ను సంవత్సరం "+rules.tax_year+" — కొత్త పాలన (ఉదాహరణాత్మకం).","ప్రామాణిక మినహాయింపు ₹"+rules.standard_deduction.toLocaleString("en-IN")+"; 87A పరిమితి ₹"+rules.rebate_87a_limit.toLocaleString("en-IN"),"స్లాబ్‌లు:"]:["Tax year "+rules.tax_year+" — new regime (illustrative).","Standard deduction ₹"+rules.standard_deduction.toLocaleString("en-IN")+"; Section 87A threshold ₹"+rules.rebate_87a_limit.toLocaleString("en-IN")+"." ,"Slabs:"];
  let lower=0;for(const slab of rules.slabs){const upper=slab.upto===null?(te?"పైగా":"and above"):"₹"+slab.upto.toLocaleString("en-IN");lines.push("₹"+lower.toLocaleString("en-IN")+" – "+upper+": "+slab.rate*100+"%");lower=slab.upto??lower;}
  lines.push(te?"సర్‌చార్జ్, ప్రత్యేక ఆదాయం, పూర్తి అర్హత పరీక్షలు ఇందులో లేవు. అధికారిక పోర్టల్‌లో నిర్ధారించండి.":"Surcharge, special-rate income and full eligibility checks are outside this illustration. Verify on the official portal.");
  return lines.join("\n");
