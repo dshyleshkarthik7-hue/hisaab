@@ -5,8 +5,10 @@ import assert from "node:assert/strict";
 const browser=await chromium.launch({headless:true});
 try{
  const page=await browser.newPage({acceptDownloads:true});
- const pageErrors=[];const fontResponses=[];
+ const pageErrors=[];const consoleErrors=[];const failedRequests=[];const fontResponses=[];
  page.on("pageerror",e=>pageErrors.push(e.message));
+ page.on("console",m=>{if(m.type()==="error")consoleErrors.push(m.text());});
+ page.on("requestfailed",r=>failedRequests.push({url:r.url(),failure:r.failure()?.errorText}));
  page.on("response",r=>{if(r.url().includes("HindGuntur"))fontResponses.push({url:r.url(),status:r.status()});});
  await page.goto("http://127.0.0.1:8788/",{waitUntil:"networkidle"});
  await page.locator('[name="years"]').fill("1");
@@ -27,7 +29,7 @@ try{
   await rows.nth(i).locator('[data-f="cost"]').fill(String(100000+i*50000));
  }
  await page.locator("#sim").evaluate(form=>form.requestSubmit());
- await page.locator("#out:not([hidden])").waitFor({timeout:60000});
+ try{await page.locator("#out:not([hidden])").waitFor({timeout:60000});}catch(error){console.log(JSON.stringify({pageErrors,consoleErrors,failedRequests,errorBox:await page.locator("#err").textContent(),runButton:await page.locator("#run").textContent(),goals:await page.locator(".goal-row").count()}));throw error;}
  await page.locator("#nudgeCard:not([hidden])").waitFor({timeout:60000});
  const [download]=await Promise.all([
   page.waitForEvent("download",{timeout:60000}),
