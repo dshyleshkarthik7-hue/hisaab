@@ -62,6 +62,6 @@ The tests cover input validation, deterministic reproducibility, expense/income 
 
 ## Deployment
 
-A Docker image and Render Blueprint are included. The image compiles the TypeScript frontend, installs ReportLab in a Python virtual environment, bundles the required Telugu fonts, and runs application services as an unprivileged user. Render's Blueprint uses a persistent disk and one instance; see the deployment guide for its scaling and deploy-downtime trade-offs.
+A Docker image and Render Blueprint are included. The image compiles the TypeScript frontend, installs ReportLab in a Python virtual environment, bundles the required Telugu fonts, and runs application services as an unprivileged user. The Blueprint targets Render's Free web-service tier for a no-card demo; it has no persistent disk, and the optional ingestion endpoints are disabled. Free hosting may sleep, restart, or run out of memory under load.
 
-This package is not independently security-reviewed, tax-certified or approved for regulated financial advice. See [DEPLOYMENT.md](DEPLOYMENT.md) for the Render Blueprint, secret handling, persistent storage, health checks and go-live acceptance gates. The app does not store simulation inputs in a customer database; optional ingestion candidates are stored on the configured data volume. External LLM processing is disabled unless explicitly enabled.
+This package is not independently security-reviewed, tax-certified or approved for regulated financial advice. See [DEPLOYMENT.md](DEPLOYMENT.md) for free-tier limitations, health checks and the remaining production acceptance gates. The app does not store simulation inputs in a customer database. External LLM processing is disabled unless explicitly enabled.
