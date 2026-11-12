@@ -396,7 +396,7 @@ $("pdfReport").addEventListener("click", () => {
 const originalShow = show;
 show = (result) => { originalShow(result); lastResult = result; };
 const originalSubmit = $("sim").onsubmit;
-$("sim").addEventListener("submit", () => { const f = $("sim"); const d = new FormData(f); const n = (k) => Number(d.get(k)); lastInput = { years: n("years"), savings: n("savings"), income: n("income"), expense: n("expense"), sip: n("sip"), ret: n("ret"), vol: n("vol"), income_growth: n("income_growth"), goals: readGoals(), events: readEvents() }; });
+$("sim").addEventListener("submit", () => { const f = $("sim"); const d = new FormData(f); const n = (k) => Number(d.get(k)); lastInput = { years: n("years"), savings: n("savings"), income: n("income"), expense: n("expense"), sip: n("sip"), ret: n("ret"), vol: n("vol"), income_growth: n("income_growth"), medical_shock: n("medical_shock"), seed: n("seed"), shocks: d.has("shocks"), goals: readGoals(), events: readEvents() }; });
 addEventRow({ label: "Career change / salary increase", year: 3, kind: "income_change", amount: 15000 });
 translateStatic();
 
@@ -639,6 +639,7 @@ loadOfficialData();
       encoded += "=".repeat((4-encoded.length%4)%4);
       const state=JSON.parse(decodeURIComponent(escape(atob(encoded))));
       applyState(state);
+      if (form) form.requestSubmit();
     } catch (_) { /* Ignore malformed or manually edited shared links. */ }
   }
 })();
