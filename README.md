@@ -76,13 +76,13 @@ The browser-only migration is tracked in [PR #13](https://github.com/dshyleshkar
 - Python parity for the full monthly engine: category inflation, life events, mandatory/flexible goals, debt-reserve glide path, 4-way scenario comparison, paired shock counterfactuals and target-SIP search.
 - Tax-year 2026–27 rule packs, slab breakdown, marginal relief, old/new regime comparison and Java legacy payroll estimate.
 - EMI calculator, worker progress/cancellation, local bilingual Mitra and official reference links.
-- Direct A4 PDF downloads via PDFMake with bundled Hind Guntur fonts and scenario-analysis sections.
+- Direct A4 PDF downloads via pdfnative with bundled Noto Telugu shaping and scenario-analysis sections.
 - Cloudflare Pages security headers, static build and manual production-deploy workflow.
 - CI runs the Python reference suite, generated Python golden fixtures, exact browser-vs-Python comparisons, TypeScript build, a 10,000-trial × 40-year baseline benchmark, 4× CPU-throttled Chromium worker testing and a browser PDF download smoke test. Scenario Lab and target-SIP bisection are on demand to avoid multiplying the baseline runtime for every run.
 
 ### Verified limitations / go-live gates
 - The 10k × 40-year benchmark currently measures the baseline simulation on a GitHub-hosted Linux runner (latest observed ~3.3 seconds), not a physical mobile device. Do a real-device performance pass before launch.
-- PDF generation is browser-side and embeds Hind Guntur fonts; CI checks Telugu glyph coverage. Final visual QA on Chrome/Edge/Safari and Android/iOS remains a release check.
+- PDF generation is browser-side and uses pdfnative's Telugu OpenType shaper with bundled Noto Telugu data. Chromium CI checks Telugu Unicode extraction from the generated PDF; visual QA on Chrome/Edge/Safari and Android/iOS remains a release check.
 - Cloudflare production deployment requires GitHub environment secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; the workflow is manual and main-branch-only. No production deployment or DNS changes have been made.
 - Attach the intended custom domain in Cloudflare Pages after the project exists and verify DNS/HTTPS.
 - The old server-side ingestion queue, protected admin APIs and optional third-party LLM are not part of the static-only build. They require a separate Cloudflare Functions/storage design if they must be retained.
