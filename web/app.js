@@ -122,10 +122,10 @@ function show(r) {
     const diagnostic = r.diagnostics || {};
     const weakest = diagnostic.weakest_goal;
     const diagNode = $("diagnostics");
-    if (diagNode) diagNode.textContent = weakest ? `Most fragile goal: ${weakest.name} (${Math.round(weakest.odds * 100)}% funded) · Failures with a recorded shock: ${Math.round((diagnostic.shock_attributed_failure_share || 0) * 100)}%` : "";
+    if (diagNode) diagNode.textContent = weakest ? `Most fragile goal: ${weakest.name} (${Math.round(weakest.odds * 100)}% funded) · Failed lives that also experienced a shock: ${Math.round((diagnostic.failed_lives_with_shock_share || 0) * 100)}%` : "";
     const shockedPath = (r.sample_paths || []).find(path => path.shock_events && path.shock_events.length);
     const chartNote = $("chartNote");
-    if (chartNote) chartNote.textContent = `24 sampled household paths · Green: all goals funded · Coral: at least one goal missed${shockedPath ? " · Example shock: " + shockedPath.shock_events.map(event => event.kind + " at month " + event.month).join(", ") : ""}`;
+    if (chartNote) chartNote.textContent = `25 sampled household paths · Green: all goals funded · Coral: at least one goal missed${shockedPath ? " · Example shock: " + shockedPath.shock_events.map(event => event.kind + " at month " + event.month).join(", ") : ""}`;
     const odds = $("odds");
     odds.replaceChildren();
     for (const g of r.goals) {
