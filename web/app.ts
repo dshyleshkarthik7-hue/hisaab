@@ -1,3 +1,7 @@
+import { simulate, type SimulationInput } from "./src/core/simulation.js";
+import { calculateEmi } from "./src/core/emi.js";
+import { estimateSalary } from "./src/core/tax.js";
+import { answerMitra } from "./src/assistant/mitra.js";
 type Kind = "general" | "education" | "medical" | "home";
 interface Goal { name: string; at: number; cost: number; kind: Kind; flex: boolean }
 interface Fan { p10: number; p50: number; p90: number }
@@ -11,6 +15,24 @@ const inr = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
 const compact = (n: number) => n >= 1e7 ? `₹${(n / 1e7).toFixed(2)} Cr` : n >= 1e5 ? `₹${(n / 1e5).toFixed(1)} L` : inr(n);
 const css = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const kinds: Kind[] = ["general", "education", "medical", "home"];
+let activeWorker: Worker | null = null;
+let workerRunId = 0;
+function runInWorker(input: SimulationInput): Promise<Result> {
+  activeWorker?.terminate();
+  const worker = new Worker(new URL("./src/workers/simulation.worker.js", import.meta.url), {type:"module"});
+  activeWorker=worker; const id=++workerRunId;
+  return new Promise((resolve,reject)=>{
+    worker.onmessage=(event:MessageEvent<any>)=>{
+      const msg=event.data;if(msg.id!==id)return;
+      if(msg.type==="progress") $("run").textContent="Simulating "+msg.done.toLocaleString("en-IN")+" / "+msg.total.toLocaleString("en-IN")+"…";
+      else if(msg.type==="result"){worker.terminate();activeWorker=null;resolve(msg.result);}
+      else if(msg.type==="error"){worker.terminate();activeWorker=null;reject(new Error(msg.message));}
+    };
+    worker.onerror=()=>{worker.terminate();activeWorker=null;reject(new Error("Simulation worker failed"));};
+    worker.postMessage({type:"run",id,input});
+  });
+}
+
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, text?: string): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);
@@ -129,8 +151,7 @@ $("sim").addEventListener("submit", async event => {
   const body = { years, savings: num("savings"), income: num("income"), sip: num("sip"), expense: num("expense"), ret: num("ret"), vol: num("vol"), income_growth: num("income_growth"), medical_shock: num("medical_shock"), seed: num("seed"), shocks: data.has("shocks"), goals, events: readEvents() };
   button.disabled = true; button.textContent = "Simulating possible lives…"; error.hidden = true;
   try {
-    const response = await fetch("/api/simulate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const payload = await response.json(); if (!response.ok) throw new Error(payload.error || "Simulation request failed");
+    const payload = await runInWorker(body as SimulationInput);
     show(payload as Result); $("out").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) { error.textContent = `Could not run the simulation: ${(e as Error).message}`; error.hidden = false; }
   finally { button.disabled = false; button.replaceChildren(document.createTextNode("Run the futures "), el("span", "", "↗")); }
@@ -144,17 +165,13 @@ goalRow({ name: "Child's education", at: 15, cost: 2500000, kind: "education", f
 goalRow({ name: "Home down payment", at: 8, cost: 2000000, kind: "home", flex: true });
 goalRow({ name: "Parents' medical fund", at: 10, cost: 1000000, kind: "medical", flex: false });
 
-async function updateQuickMath(): Promise<void> {
+function updateQuickMath(): void {
   const value = (id: string) => Number(($<HTMLInputElement>(id)).value);
   try {
-    const [emiResponse, taxResponse] = await Promise.all([
-      fetch(`/api/emi?loan=${value("loan")}&rate=${value("rate")}&years=${value("ly")}`),
-      fetch(`/api/tax?ctc=${value("ctc")}&basic=${value("basic")}&pt=${value("pt")}`)
-    ]);
-    const [emi, tax] = await Promise.all([emiResponse.json(), taxResponse.json()]);
-    if (!emiResponse.ok || !taxResponse.ok) throw new Error("Check the values entered.");
-    $("emiOut").textContent = `Monthly EMI ${inr(emi.emi)} · Total interest ${inr(emi.interest)}`;
-    $("taxOut").textContent = `Estimated monthly take-home ${inr(tax.inhand / 12)} · Estimated annual tax ${inr(tax.tax)}`;
+    const emi = calculateEmi(value("loan"), value("rate"), value("ly"));
+    const tax = estimateSalary(value("ctc"), value("basic"), value("pt"));
+    $("emiOut").textContent = "Monthly EMI " + inr(emi.emi) + " · Total interest " + inr(emi.interest);
+    $("taxOut").textContent = "Estimated monthly take-home " + inr(tax.inhand / 12) + " · Estimated annual tax " + inr(tax.tax);
   } catch (e) { $("emiOut").textContent = (e as Error).message; $("taxOut").textContent = "Salary estimate unavailable."; }
 }
 ["loan", "rate", "ly", "ctc", "basic", "pt"].forEach(id => $(id).addEventListener("input", updateQuickMath));
@@ -309,11 +326,9 @@ $("pdfReport").addEventListener("click", async (ev) => {
   if (!lastInput || !lastResult) { alert(language==="te"?"ముందుగా సిమ్యులేషన్‌ను అమలు చేయండి.":"Run a simulation before creating your report."); return; }
   ev.preventDefault();
   try {
-    const res=await fetch("/api/report/pdf",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lang:language,inputs:lastInput,result:lastResult})});
-    if(!res.ok) throw new Error("PDF generation failed");
-    const blob=await res.blob(); const url=URL.createObjectURL(blob); const a=document.createElement("a");
-    a.href=url; a.download=language==="te"?"hisaab-nivadika.pdf":"hisaab-report.pdf";
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    const w=window.open("","_blank");
+    if(!w) throw new Error("Allow pop-ups to print your report.");
+    w.document.open(); w.document.write(reportHtml()); w.document.close();
   } catch {
     const w=window.open("","_blank");
     if(w){w.document.open();w.document.write(reportHtml());w.document.close();}
@@ -409,13 +424,7 @@ async function askMitra(question: string): Promise<void> {
     if (lastResult) {
       ctx.inputs=lastInput; ctx.simulation={score:lastResult.score,depletion_odds:lastResult.depletion_odds,diagnostics:lastResult.diagnostics,shock_counterfactuals:lastResult.nudge&&lastResult.nudge.shock_counterfactuals,target_sip:lastResult.nudge&&lastResult.nudge.target_sip};
     }
-    const res = await fetch("/api/mitra", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: q, context: ctx }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Mitra unavailable");
+    const data = { reply: answerMitra(q, language, lastResult ? {score:lastResult.score,depletion_odds:lastResult.depletion_odds} : undefined), sources: [], calculations: null };
     appendMitraBubble("mitra", data.reply, data.sources);
     if (data.calculations) {
       showWhy({
@@ -458,27 +467,19 @@ function showWhy(payload: {
   }
 }
 
-async function loadOfficialData(): Promise<void> {
+function loadOfficialData(): void {
   const box = document.getElementById("dataCards");
   if (!box) return;
-  try {
-    const res = await fetch("/api/data/snapshot");
-    const data = await res.json();
-    if (!res.ok) throw new Error("data");
-    box.innerHTML = "";
-    (data.items || []).forEach((item: any) => {
-      const card = el("article", "data-card");
-      card.append(el("h4", "", item.title));
-      card.append(el("div", "data-value", item.value));
-      card.append(el("p", "tiny-note",
-        `${language === "te" ? "మూలం" : "Source"}: ${item.source} · ` +
-        `${language === "te" ? "ప్రత్యక్ష ధృవీకరణ లేదు" : "Not live-verified"}`));
-      if (item.notes) card.append(el("p", "tiny-note", item.notes));
-      box.append(card);
-    });
-  } catch {
-    box.textContent = language === "te" ? "డేటా అందుబాటులో లేదు." : "Official data unavailable.";
-  }
+  const items = [
+    {title:"Income Tax Department",value:"Official tax rules and calculator",source:"incometax.gov.in",url:"https://www.incometax.gov.in/"},
+    {title:"Reserve Bank of India",value:"Policy rates and financial education",source:"rbi.org.in",url:"https://www.rbi.org.in/"},
+    {title:"SEBI Investor",value:"Investor education and protection",source:"investor.sebi.gov.in",url:"https://investor.sebi.gov.in/"}
+  ];
+  box.replaceChildren();
+  items.forEach(item => {
+    const card=el("article","data-card"); card.append(el("h4","",item.title),el("div","data-value",item.value),el("p","tiny-note",(language==="te"?"అధికారిక మూలం: ":"Official source: ")+item.source));
+    const link=el("a","",language==="te"?"మూలాన్ని తెరవండి":"Open source"); link.href=item.url; link.target="_blank"; link.rel="noopener noreferrer"; card.append(link); box.append(card);
+  });
 }
 
 // Mitra form
@@ -496,7 +497,7 @@ if (mitraForm) {
 const prevLangClick = ($("langToggle") as HTMLButtonElement).onclick;
 $("langToggle").addEventListener("click", () => {
   renderMitraSuggestions();
-  void loadOfficialData();
+  loadOfficialData();
   // re-apply static translations for new keys
   document.querySelectorAll<HTMLElement>("[data-i18n]").forEach((node) => {
     const key = node.getAttribute("data-i18n") || "";
