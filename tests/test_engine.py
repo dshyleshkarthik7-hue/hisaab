@@ -85,9 +85,6 @@ class EngineTests(unittest.TestCase):
             self.assertIn("ending_median", s)
             self.assertIn("depletion_odds", s)
 
-if __name__ == "__main__":
-    unittest.main()
-
     def test_sample_paths_and_diagnostics_are_returned(self):
         result = engine.simulate(BASE, trials=300)
         self.assertEqual(len(result["sample_paths"]), 24)
@@ -104,3 +101,6 @@ if __name__ == "__main__":
     def test_target_sip_is_bounded(self):
         result = engine.target_sip(BASE, engine.simulate(BASE, trials=300))
         self.assertGreaterEqual(result["additional_monthly_sip"], 0)
+
+if __name__ == "__main__":
+    unittest.main()
