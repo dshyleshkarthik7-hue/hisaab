@@ -1,12 +1,12 @@
 {
   "name": "hisaab-web",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Hisaab household-finance simulator frontend",
+  "description": "Hisaab browser-only household finance simulator",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "node --check app.js"
+    "test": "npm run build && node --check app.js"
   },
   "devDependencies": {
     "typescript": "5.7.3"
