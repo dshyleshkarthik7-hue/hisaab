@@ -1,4 +1,4 @@
-import { type SimulationInput } from "./src/core/simulation.js";
+import { type SimulationInput, type SimulationResult } from "./src/core/simulation.js";
 import { calculateEmi } from "./src/core/emi.js";
 import { estimateSalary } from "./src/core/tax.js";
 import { answerMitra } from "./src/assistant/mitra.js";
