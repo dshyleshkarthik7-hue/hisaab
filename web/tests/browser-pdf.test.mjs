@@ -41,5 +41,26 @@ try{
  assert.ok(raw.includes("HindGuntur"),"PDF embeds Hind Guntur font resource");
  assert.ok(fontResponses.length>=2&&fontResponses.every(x=>x.status===200),"both Telugu font files loaded successfully");
  assert.deepEqual(pageErrors,[],"browser page has no uncaught errors");
- console.log(JSON.stringify({browser:"Chromium headless",pdf_bytes:bytes.length,filename:download.suggestedFilename(),fonts:fontResponses,scenarioLab:"visible",status:"passed"}));
+
+ const cdp=await page.context().newCDPSession(page);
+ await cdp.send("Emulation.setCPUThrottlingRate",{rate:4});
+ const benchmark=await page.evaluate(async()=>{
+  const input={years:40,trials:10000,savings:5000000,income:150000,sip:40000,expense:80000,ret:8,vol:15,income_growth:5,medical_shock:400000,seed:20261112,shocks:true,goals:[{name:"Education",at:15,cost:2500000,kind:"education",flex:false},{name:"Home",at:25,cost:5000000,kind:"home",flex:true},{name:"Retirement",at:35,cost:10000000,kind:"general",flex:true}]};
+  const worker=new Worker(new URL("/src/workers/simulation.worker.bundle.js",location.origin),{type:"module"});
+  const start=performance.now();
+  try{
+   const result=await new Promise((resolve,reject)=>{
+    worker.onmessage=event=>{if(event.data.type==="result")resolve(event.data.result);else if(event.data.type==="error")reject(new Error(event.data.message));};
+    worker.onerror=event=>reject(new Error(event.message));
+    worker.postMessage({type:"baseline",id:77,input});
+   });
+   return {elapsed_ms:Math.round(performance.now()-start),trials:result.trials,fan_years:result.fan.length,sample_paths:result.sample_paths.length};
+  }finally{worker.terminate();}
+ });
+ assert.equal(benchmark.trials,10000,"throttled browser benchmark trial count");
+ assert.equal(benchmark.fan_years,41,"throttled browser benchmark horizon");
+ assert.equal(benchmark.sample_paths,25,"throttled browser benchmark paths");
+ assert.ok(benchmark.elapsed_ms<90000,"4x-throttled browser benchmark under 90 seconds");
+ console.log(JSON.stringify({browser:"Chromium headless",pdf_bytes:bytes.length,filename:download.suggestedFilename(),fonts:fontResponses,scenarioLab:"visible",mobile_cpu_emulation:"4x throttle",benchmark,status:"passed"}));
+
 }finally{await browser.close();}
