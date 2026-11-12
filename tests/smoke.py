@@ -2,6 +2,7 @@
 import json
 import os
 import socket
+import shutil
 import subprocess
 import time
 import urllib.error
@@ -15,9 +16,12 @@ def free_port():
         sock.bind(("127.0.0.1", 0))
         return sock.getsockname()[1]
 
-def request(url, payload=None):
+def request(url, payload=None, extra_headers=None):
     data = None if payload is None else json.dumps(payload).encode()
-    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+    headers = {"Content-Type": "application/json"}
+    if extra_headers:
+        headers.update(extra_headers)
+    req = urllib.request.Request(url, data=data, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=90) as response:
             raw = response.read()
@@ -31,6 +35,8 @@ def main():
     env = os.environ.copy()
     env["HISAAB_HTTP_PORT"] = str(http_port)
     env["HISAAB_ENGINE_PORT"] = str(engine_port)
+    env["HISAAB_ADMIN_TOKEN"] = "smoke-test-admin-token"
+    env["HISAAB_DATA_DIR"] = f"/tmp/hisaab-smoke-data-{http_port}"
     process = subprocess.Popen(["bash", "run.sh"], cwd=ROOT, env=env,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     base = f"http://127.0.0.1:{http_port}"
@@ -56,6 +62,11 @@ def main():
         assert status == 200 and json.loads(body).get("status") == "ready"
 
         
+        status, _ = request(base + "/api/ingestion/status")
+        assert status == 401, "admin endpoint must reject missing bearer token"
+        status, body = request(base + "/api/ingestion/status", extra_headers={"Authorization": "Bearer smoke-test-admin-token"})
+        assert status == 200 and b"candidates" in body, "admin endpoint must accept configured bearer token"
+
         status, body = request(base + "/api/data/snapshot")
         assert status == 200 and b"items" in body
 
@@ -107,6 +118,7 @@ def main():
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait(timeout=3)
+        shutil.rmtree(env["HISAAB_DATA_DIR"], ignore_errors=True)
 
 if __name__ == "__main__":
     main()
