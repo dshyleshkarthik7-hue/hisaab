@@ -66,6 +66,7 @@ Also run the full browser flow manually: create a scenario, run simulations, com
 | `HISAAB_ENGINE_PORT` | 8081 | Internal engine port, bound to loopback only. Never expose it publicly. |
 | `HISAAB_BIND` | 0.0.0.0 | Public gateway bind address. |
 | `HISAAB_RATE_LIMIT` | 60 | Requests per client IP per minute; set to 0 only when a trusted edge enforces equivalent limits. |
+| `HISAAB_GLOBAL_RATE_LIMIT` | 120 | Total requests per minute per instance, limiting distributed bursts. |
 | `HISAAB_TRUST_PROXY_HEADERS` | false | Trust Render's overwritten `CF-Connecting-IP` header. Do not enable for arbitrary/self-hosted proxies. |
 | `HISAAB_HTTP_THREADS` | 8 | Bounded gateway worker count (4–32). |
 | `HISAAB_DATA_DIR` | `python/data` | Candidate/approved ingestion storage; mount persistent storage here for operational use. |
