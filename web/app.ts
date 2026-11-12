@@ -10,7 +10,7 @@ interface ScenarioCard { label: string; score: number; depletion_odds: number; e
 interface ShockCounterfactual { failures_prevented_if_removed: number; new_failures_in_counterfactual: number; net_failure_reduction: number; paired_trials: number }
 interface NudgePayload { scenarios?: ScenarioCard[]; best?: { text: string; score: number } | null; text?: string; score?: number; target_sip?: { target_score:number; monthly_sip:number; additional_monthly_sip:number; reachable:boolean; achieved_score?:number; trials?:number }; shock_counterfactuals?: Record<string, ShockCounterfactual> }
 interface SamplePath { ok:boolean; shocked:boolean; shock_events:{month:number;kind:string;amount?:number}[]; values:number[]; label:string; tags?:string[] }
-interface Result { score:number; trials:number; seed:number; goals:{name:string;at:number;odds:number}[]; fan:Fan[]; sample_paths?:SamplePath[]; ending:Fan; depletion_odds:number; diagnostics?:{weakest_goal?:{name:string;odds:number};failed_lives_with_shock_share?:number;shock_cooccurrence_note?:string}; nudge:NudgePayload|null }
+interface Result { _trial_success?:boolean[]; assumptions?:Record<string,unknown>; score:number; trials:number; seed:number; goals:{name:string;at:number;odds:number}[]; fan:Fan[]; sample_paths?:SamplePath[]; ending:Fan; depletion_odds:number; diagnostics?:{weakest_goal?:{name:string;odds:number};failed_lives_with_shock_share?:number;shock_cooccurrence_note?:string}; nudge:NudgePayload|null }
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const inr = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
 const compact = (n: number) => n >= 1e7 ? `₹${(n / 1e7).toFixed(2)} Cr` : n >= 1e5 ? `₹${(n / 1e5).toFixed(1)} L` : inr(n);
@@ -19,7 +19,7 @@ const kinds: Kind[] = ["general", "education", "medical", "home"];
 let activeWorker: Worker | null = null;
 let cancelActiveSimulation: (() => void) | null = null;
 let workerRunId = 0;
-function runInWorker(input: SimulationInput): Promise<Result> {
+function runInWorker(input: SimulationInput, task:"run"|"scenarios"|"target"|"baseline"="run", base?:Result): Promise<any> {
   activeWorker?.terminate();
   const worker = new Worker(new URL("./src/workers/simulation.worker.bundle.js", import.meta.url), {type:"module"});
   activeWorker=worker; const id=++workerRunId;
@@ -32,7 +32,7 @@ function runInWorker(input: SimulationInput): Promise<Result> {
       else if(msg.type==="error"){worker.terminate();activeWorker=null;cancelActiveSimulation=null;reject(new Error(msg.message));}
     };
     worker.onerror=()=>{worker.terminate();activeWorker=null;cancelActiveSimulation=null;reject(new Error("Simulation worker failed"));};
-    worker.postMessage({type:"run",id,input});
+    worker.postMessage({type:task,id,input,...(base?{base}: {})});
   });
 }
 
