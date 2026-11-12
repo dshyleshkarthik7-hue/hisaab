@@ -154,10 +154,10 @@ $("sim").addEventListener("submit", async event => {
   const form = $("sim") as HTMLFormElement, data = new FormData(form), num = (key: string) => Number(data.get(key));
   const goals = readGoals(), years = num("years");
   const error = $("err"), button = $("run") as HTMLButtonElement;
-  const invalid = goals.length < 1 || goals.length > 12 || goals.some(g => !g.name || !Number.isInteger(g.at) || g.at < 1 || g.at > years || !Number.isFinite(g.cost) || g.cost <= 0);
+  const invalid = !Number.isInteger(num("trials")) || num("trials") < 100 || num("trials") > 10000 || goals.length < 1 || goals.length > 12 || goals.some(g => !g.name || !Number.isInteger(g.at) || g.at < 1 || g.at > years || !Number.isFinite(g.cost) || g.cost <= 0);
   if (invalid) { error.textContent = "Add 1–12 valid goals. Each needs a name, positive cost and target year within your simulation."; error.hidden = false; return; }
-  const body = { years, savings: num("savings"), income: num("income"), sip: num("sip"), expense: num("expense"), ret: num("ret"), vol: num("vol"), income_growth: num("income_growth"), medical_shock: num("medical_shock"), seed: num("seed"), shocks: data.has("shocks"), goals, events: readEvents() };
-  button.disabled = true; button.textContent = "Simulating possible lives…"; error.hidden = true;
+  const body = { years, trials:num("trials"), savings: num("savings"), income: num("income"), sip: num("sip"), expense: num("expense"), ret: num("ret"), vol: num("vol"), income_growth: num("income_growth"), medical_shock: num("medical_shock"), seed: num("seed"), shocks: data.has("shocks"), goals, events: readEvents() };
+  button.disabled = true; button.textContent = "Simulating possible lives…"; error.hidden = true; $("trialCount").textContent = num("trials").toLocaleString("en-IN")+" simulated lives";
   const cancel = el("button", "button button-quiet", "Cancel simulation"); cancel.type = "button"; cancel.id = "cancelSimulation"; button.parentElement?.append(cancel);
   cancel.addEventListener("click", () => { cancelActiveSimulation?.(); cancelActiveSimulation = null; workerRunId++; cancel.remove(); button.disabled = false; button.textContent = "Run the futures ↗"; error.textContent = "Simulation cancelled."; error.hidden = false; });
   try {
@@ -350,7 +350,7 @@ $("pdfReport").addEventListener("click", async (ev) => {
 const originalShow = show;
 (show as any) = (result:Result) => { originalShow(result); lastResult=result; };
 const originalSubmit = $("sim").onsubmit;
-$("sim").addEventListener("submit",()=>{ const f=$("sim") as HTMLFormElement; const d=new FormData(f); const n=(k:string)=>Number(d.get(k)); lastInput={years:n("years"),savings:n("savings"),income:n("income"),expense:n("expense"),sip:n("sip"),ret:n("ret"),vol:n("vol"),income_growth:n("income_growth"),medical_shock:n("medical_shock"),seed:n("seed"),shocks:d.has("shocks"),goals:readGoals(),events:readEvents()}; });
+$("sim").addEventListener("submit",()=>{ const f=$("sim") as HTMLFormElement; const d=new FormData(f); const n=(k:string)=>Number(d.get(k)); lastInput={years:n("years"),trials:n("trials"),savings:n("savings"),income:n("income"),expense:n("expense"),sip:n("sip"),ret:n("ret"),vol:n("vol"),income_growth:n("income_growth"),medical_shock:n("medical_shock"),seed:n("seed"),shocks:d.has("shocks"),goals:readGoals(),events:readEvents()}; });
 addEventRow({label:"Career change / salary increase",year:3,kind:"income_change",amount:15000});
 translateStatic();
 
