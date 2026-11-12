@@ -54,7 +54,7 @@ RULES_TY_2026_27_OLD = {
     "rebate_87a_limit": 500_000,
     "cess": 0.04,
     "notes": [
-        "Old regime illustrative path. Chapter VI-A deductions are user-supplied aggregate.",
+        "Old regime illustrative path. Resident individual eligibility for Section 87A is assumed; Chapter VI-A deductions are user-supplied aggregate.",
         "Exact eligibility depends on individual facts; this is not a filing computation.",
     ],
 }
@@ -139,8 +139,10 @@ def compute_tax(
 
     # Apply Section 87A marginal relief before adding health and education cess.
     if regime == "new" and base > rebate_limit:
-        # Marginal relief caps tax (before cess) at income exceeding the rebate threshold.
+        # Marginal relief is an additional Section 87A rebate before cess.
+        pre_relief_tax = tax
         tax = min(tax, base - rebate_limit)
+        rebate += pre_relief_tax - tax
     cess = tax * rules["cess"]
     total = tax + cess
 
