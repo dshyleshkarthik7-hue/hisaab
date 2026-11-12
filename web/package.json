@@ -1,13 +1,14 @@
 {
-  "name": "web",
+  "name": "hisaab-web",
   "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
+  "private": true,
+  "description": "Hisaab household-finance simulator frontend",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "node --check app.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "devDependencies": {
+    "typescript": "5.7.3"
+  }
 }
