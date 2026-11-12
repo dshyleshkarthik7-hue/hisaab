@@ -527,11 +527,6 @@ const prevShowRef = show;
   });
 };
 
-// Improve PDF: download HTML report as file (print remains available)
-$("pdfReport").addEventListener("click", () => {
-  // existing handler opens print window; also offer downloadable HTML snapshot
-}, { once: false });
-
 renderMitraSuggestions();
 void loadOfficialData();
 
