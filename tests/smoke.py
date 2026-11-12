@@ -84,6 +84,8 @@ def main():
         result = json.loads(body)
         assert status == 200 and result["trials"] == 2000
         assert 0 <= result["score"] <= 1 and len(result["fan"]) == 3
+        status, pdf = request(base + "/api/report/pdf", {"lang": "en", "inputs": {**scenario, "events": []}, "result": result})
+        assert status == 200 and pdf.startswith(b"%PDF"), "PDF endpoint did not return a valid PDF"
 
         status, _ = request(base + "/api/simulate", {"years": 99})
         assert status == 400
