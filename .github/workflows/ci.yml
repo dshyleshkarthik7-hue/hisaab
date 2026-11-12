@@ -42,3 +42,5 @@ jobs:
         run: python tests/smoke.py
       - name: Docker image build
         run: docker build -t hisaab:ci .
+      - name: Docker runtime smoke tests
+        run: bash tests/docker_smoke.sh
