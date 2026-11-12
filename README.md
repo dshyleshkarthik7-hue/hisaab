@@ -65,3 +65,20 @@ The tests cover input validation, deterministic reproducibility, expense/income 
 A Docker image and Render Blueprint are included. The image compiles the TypeScript frontend, installs ReportLab in a Python virtual environment, bundles the required Telugu fonts, and runs application services as an unprivileged user. Render's Blueprint uses a persistent disk and one instance; see the deployment guide for its scaling and deploy-downtime trade-offs.
 
 This package is not independently security-reviewed, tax-certified or approved for regulated financial advice. See [DEPLOYMENT.md](DEPLOYMENT.md) for the Render Blueprint, secret handling, persistent storage, health checks and go-live acceptance gates. The app does not store simulation inputs in a customer database; optional ingestion candidates are stored on the configured data volume. External LLM processing is disabled unless explicitly enabled.
+
+
+## Cloudflare Pages migration (work in progress)
+
+A browser-native migration is being developed on `migration/cloudflare-full-static` and tracked in [PR #13](https://github.com/dshyleshkarthik7-hue/hisaab/pull/13). The current draft adds a static Pages configuration, security headers, TypeScript calculation modules, a Web Worker, local Mitra responses and browser print reporting.
+
+**Do not use this draft as a validated financial calculator yet.** The TypeScript simulation and random streams are not yet proven bit-for-bit equivalent to the Python reference. Scenario Lab, paired shock counterfactuals, target-SIP search, tax/salary parity, and direct PDF generation still require implementation and tests. Keep the existing Java/Python runtime available until the acceptance suite passes.
+
+For a local static build:
+
+```sh
+cd web
+npm install
+npm run build
+```
+
+The Pages build output directory is `web`. The custom domain `lekkapulse.app` still needs to be attached and DNS configured in the Cloudflare account. No deployment or DNS change is performed by this repository migration branch.
