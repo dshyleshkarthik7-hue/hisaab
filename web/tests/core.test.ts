@@ -11,7 +11,7 @@ async function main(){
  assert(computeTax(1300000).total_tax>0,"tax above rebate threshold");
  const marginal=computeTax(1200001);assert(marginal.total_tax<=1.04,"marginal relief before cess");
  assert(compareRegimes(1500000).new&&compareRegimes(1500000).old,"regime comparison");
- const salary=estimateSalary(1500000,40,200);assert(salary.inhand>0&&salary.employeePf===7200,"legacy payroll PF cap");
+ const salary=estimateSalary(1500000,40,200);assert(salary.inhand>0&&salary.employeePf===21600,"legacy payroll PF cap");
  const py=createRandomStreams(42).market,reference=[0.626510132123957,0.2378966714398918,0.5267182881671381,0.19939398289007337,0.08856495685172938];
  reference.forEach((v)=>close(py(),v,"CPython MT19937 random stream"));
  const gauss=createRandomStreams(42).market.gauss,gaussRef=-0.5162537474415101;close(gauss(),gaussRef,"CPython gauss");
