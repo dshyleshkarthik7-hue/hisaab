@@ -6,7 +6,7 @@ Hisaab is a stateless household-finance simulator for user inputs. The operation
 
 1. Merge the deployment-readiness pull request into `main` after CI passes.
 2. In Render, create a **New → Blueprint** and connect `dshyleshkarthik7-hue/hisaab`.
-3. Review the Blueprint before applying it. It creates one paid Starter web service in Singapore, a 1 GB persistent disk, a generated `HISAAB_ADMIN_TOKEN`, and a readiness probe at `/readyz`.
+3. Review the Blueprint before applying it. It creates one paid 1 CPU / 2 GB web service in Singapore, a 1 GB persistent disk, a generated `HISAAB_ADMIN_TOKEN`, and a readiness probe at `/readyz`.
 4. Keep the generated administrator token secret. Use it only for the operational endpoints listed below. Rotate it from the Render Environment page if exposed.
 5. Wait for the first deploy to become Live, then verify the checks below before sharing the URL.
 6. Add a custom domain only after the smoke checks pass. Render terminates HTTPS for web services; verify the custom-domain certificate before advertising the site.
