@@ -87,9 +87,12 @@ class EngineTests(unittest.TestCase):
 
     def test_sample_paths_and_diagnostics_are_returned(self):
         result = engine.simulate(BASE, trials=300)
-        self.assertEqual(len(result["sample_paths"]), 24)
+        self.assertEqual(len(result["sample_paths"]), 25)
         self.assertIn("label", result["sample_paths"][0])
         self.assertIn("weakest_goal", result["diagnostics"])
+        self.assertIn("failed_lives_with_shock_share", result["diagnostics"])
+        self.assertIn("debt_bucket_volatility", result["assumptions"])
+        self.assertEqual(len(result["_trial_success"]), 300)
 
     def test_glide_path_is_reported_and_reproducible(self):
         raw = {**BASE, "years": 5, "goals": [{"name": "Education", "at": 4, "cost": 500000, "kind": "education", "flex": False}]}
@@ -101,7 +104,20 @@ class EngineTests(unittest.TestCase):
     def test_target_sip_is_bounded(self):
         result = engine.target_sip(BASE, engine.simulate(BASE, trials=300))
         self.assertGreaterEqual(result["additional_monthly_sip"], 0)
+        self.assertEqual(result["trials"], BASE["trials"])
+        self.assertIn("achieved_score", result)
 
+
+
+    def test_paired_shock_counterfactuals_use_same_trial_paths(self):
+        raw = {**BASE, "shocks": True, "years": 8, "medical_shock": 250000}
+        base = engine.simulate(raw, trials=300)
+        result = engine.nudge(raw, base)
+        self.assertIn("unemployment", result["shock_counterfactuals"])
+        self.assertIn("medical", result["shock_counterfactuals"])
+        for item in result["shock_counterfactuals"].values():
+            self.assertEqual(item["paired_trials"], 300)
+            self.assertGreaterEqual(item["failures_prevented_if_removed"], 0)
 
     def test_ingestion_rejects_path_traversal(self):
         import ingestion
