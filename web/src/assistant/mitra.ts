@@ -1,0 +1,13 @@
+export type MitraLanguage="en"|"te";
+const answers:{test:RegExp;en:string;te:string}[]=[
+ {test:/sip|systematic investment/i,en:"A SIP is a recurring investment of a fixed amount at a chosen interval. In Hisaab, planned SIP is capped by the monthly surplus after household expenses. Returns are uncertain; a simulation is not a forecast.",te:"SIP అనేది నిర్ణీత వ్యవధిలో పెట్టుబడి పెట్టే స్థిర మొత్తం. Hisaabలో గృహ ఖర్చుల తర్వాత మిగిలిన మొత్తానికి SIP పరిమితం అవుతుంది. రాబడులు అనిశ్చితం; సిమ్యులేషన్ హామీ కాదు."},
+ {test:/inflation|ద్రవ్యోల్బణం/i,en:"Hisaab models four illustrative inflation categories: general 6%, education 10%, medical 8%, and home 5.5% annual averages. These are assumptions, not forecasts.",te:"Hisaab నాలుగు ఉదాహరణాత్మక ద్రవ్యోల్బణ వర్గాలను ఉపయోగిస్తుంది: సాధారణం 6%, విద్య 10%, వైద్యం 8%, ఇల్లు 5.5%. ఇవి అంచనాలు మాత్రమే."},
+ {test:/tax|87a|rebate/i,en:"The built-in Tax Year 2026–27 calculator is illustrative, limited to income up to ₹50 lakh, and excludes surcharge. Verify current eligibility and rules with the Income Tax Department.",te:"Tax Year 2026–27 పన్ను లెక్కింపు ఉదాహరణాత్మకం; ₹50 లక్షల వరకు మాత్రమే, సర్‌చార్జ్ లేదు. ఆదాయపు పన్ను శాఖ వద్ద తాజా నియమాలను నిర్ధారించండి."},
+ {test:/goal|mandatory|flexible/i,en:"Mandatory goals can exhaust the remaining portfolio when they cannot be funded in their scheduled year. Flexible goals are marked unsuccessful but do not force the corpus to zero.",te:"తప్పనిసరి లక్ష్యానికి నిధులు సరిపోకపోతే మిగిలిన పోర్ట్‌ఫోలియో ఖాళీ కావచ్చు. అనువైన లక్ష్యాలు విఫలమవుతాయి కానీ నిధిని బలవంతంగా సున్నా చేయవు."}
+];
+export function answerMitra(question:string,language:MitraLanguage="en",context?:{score?:number;depletion_odds?:number}):string{
+ const item=answers.find(a=>a.test.test(question));
+ if(item)return language==="te"?item.te:item.en;
+ if(/result|score|simulation|సిమ్యులేషన్/i.test(question)&&context?.score!==undefined)return language==="te"?`మీ సిమ్యులేషన్‌లో అన్ని లక్ష్యాలు సాధించిన వాటా ${Math.round(context.score*100)}%. నిధి ఖాళీ అయ్యే వాటా ${Math.round((context.depletion_odds??0)*100)}%. ఇవి మీరు ఇచ్చిన అంచనాలపై ఆధారపడతాయి.`:`Your run funded every goal in ${Math.round(context.score*100)}% of simulated lives; ${Math.round((context.depletion_odds??0)*100)}% ended with a depleted corpus. These are conditional model outputs, not real-world probabilities.`;
+ return language==="te"?"నేను SIP, ద్రవ్యోల్బణం, పన్ను లేదా లక్ష్యాల గురించి వివరించగలను. మీ ప్రశ్నను కొంచెం స్పష్టంగా అడగండి.":"I can explain SIPs, inflation assumptions, tax estimates, goal funding and simulation results. Try asking about one of those topics.";
+}
