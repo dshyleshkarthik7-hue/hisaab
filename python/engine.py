@@ -138,7 +138,7 @@ def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=
                     for i,g in enumerate(adjusted):
                         left=g["at"]-y
                         if not g["flex"] and 0<=left<=3:
-                            target=g["cost"]*infl[g["kind"]]; pv=target/(1.065**left)
+                            target=g["cost"]*infl[g["kind"]]*((1+INFLATION[g["kind"]][0]/100)**left); pv=target/(1.065**left)
                             move=min(max(0.0,equity),max(0.0,pv-reserves[i]))
                             equity-=move; reserves[i]+=move
             log_mean=math.log1p(p["ret"]/100)-.5*(p["vol"]/100)**2
@@ -214,17 +214,28 @@ def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=
        "life_events":p["events"],"return_model":"lognormal monthly returns calibrated to annual arithmetic mean and volatility"}}
 
 def target_sip(p,base,target=.85):
-    """Binary-search the smallest SIP multiplier reaching the target success odds."""
+    """Binary-search the smallest feasible monthly SIP for the target success odds."""
     p=validate(p)
-    if base["score"]>=target: return {"target_score":target,"monthly_sip":p["sip"],"additional_monthly_sip":0.0,"reachable":True}
-    low,high=1.0,16.0; best=None
+    if not 0 < target <= 1:
+        raise InputError("target must be greater than 0 and at most 1")
+    if base["score"]>=target:
+        return {"target_score":target,"monthly_sip":p["sip"],"additional_monthly_sip":0.0,"reachable":True}
+    initial_surplus=max(0.0,p["income"]-p["expense"])
+    if p["sip"]<=0 or initial_surplus<=p["sip"]:
+        return {"target_score":target,"monthly_sip":p["sip"],"additional_monthly_sip":0.0,"reachable":False}
+    low,high=1.0,min(16.0,initial_surplus/p["sip"])
     target_trials=min(p["trials"],500)
-    for _ in range(10):
-        mid=(low+high)/2; score=simulate(p,trials=target_trials,seed=p["seed"],sip_boost=mid)["score"]
-        if score>=target: best=mid; high=mid
+    if simulate(p,trials=target_trials,seed=p["seed"],sip_boost=high)["score"]<target:
+        return {"target_score":target,"monthly_sip":round(p["sip"]*high,2),
+                "additional_monthly_sip":round(p["sip"]*(high-1),2),"reachable":False}
+    for _ in range(24):
+        mid=(low+high)/2
+        score=simulate(p,trials=target_trials,seed=p["seed"],sip_boost=mid)["score"]
+        if score>=target: high=mid
         else: low=mid
-    mult=best if best is not None else high; monthly=p["sip"]*mult
-    return {"target_score":target,"monthly_sip":round(monthly,2),"additional_monthly_sip":round(max(0,monthly-p["sip"]),2),"reachable":best is not None}
+    monthly=p["sip"]*high
+    return {"target_score":target,"monthly_sip":round(monthly,2),
+            "additional_monthly_sip":round(max(0,monthly-p["sip"]),2),"reachable":True}
 
 def nudge(p,base):
     """Four scenario comparisons using common random numbers."""
