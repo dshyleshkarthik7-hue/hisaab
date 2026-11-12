@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "python"))
 import ingestion
 import tax_engine
 import llm_provider
+import data_service
 
 
 class SecurityAndTaxTests(unittest.TestCase):
@@ -46,6 +47,14 @@ class SecurityAndTaxTests(unittest.TestCase):
             with patch.object(ingestion, "CANDIDATES", candidates), patch.object(ingestion, "APPROVED", approved):
                 with self.assertRaises(ValueError):
                     ingestion.approve_candidate("candidate.json")
+
+    def test_reference_data_does_not_publish_unverified_rates(self):
+        snap = data_service.snapshot()
+        self.assertEqual(snap["status"], "reference_links_only")
+        for item in snap["items"]:
+            if item["category"] != "income_tax":
+                self.assertIsNone(item["numeric"])
+                self.assertIsNone(item["verified_on"])
 
     def test_external_llm_requires_explicit_opt_in(self):
         with patch.object(llm_provider, "ENABLED", False), patch.object(llm_provider, "PROVIDER", "gemini"), patch.object(llm_provider, "API_KEY", "test-key"):
