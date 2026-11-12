@@ -469,9 +469,12 @@ function loadOfficialData(): void {
   const box = document.getElementById("dataCards");
   if (!box) return;
   const items = [
-    {title:"Income Tax Department",value:"Official tax rules and calculator",source:"incometax.gov.in",url:"https://www.incometax.gov.in/"},
-    {title:"Reserve Bank of India",value:"Policy rates and financial education",source:"rbi.org.in",url:"https://www.rbi.org.in/"},
-    {title:"SEBI Investor",value:"Investor education and protection",source:"investor.sebi.gov.in",url:"https://investor.sebi.gov.in/"}
+    {title:"Income Tax Department",value:language==="te"?"పన్ను నియమాలు మరియు అధికారిక కాలిక్యులేటర్":"Tax rules and official calculator",source:"incometax.gov.in",url:"https://www.incometax.gov.in/"},
+    {title:"Reserve Bank of India",value:language==="te"?"ద్రవ్య విధానం మరియు ఆర్థిక విద్య":"Monetary policy and financial education",source:"rbi.org.in",url:"https://www.rbi.org.in/"},
+    {title:"Ministry of Statistics and Programme Implementation",value:language==="te"?"CPI మరియు అధికారిక గణాంకాలు":"CPI and official statistics",source:"mospi.gov.in",url:"https://www.mospi.gov.in/"},
+    {title:"CBIC — GST",value:language==="te"?"GST రేట్లు మరియు వర్గీకరణ":"GST rates and classifications",source:"cbic-gst.gov.in",url:"https://cbic-gst.gov.in/"},
+    {title:"SEBI Investor",value:language==="te"?"పెట్టుబడిదారుల విద్య మరియు రక్షణ":"Investor education and protection",source:"investor.sebi.gov.in",url:"https://investor.sebi.gov.in/"},
+    {title:"India Post Savings",value:language==="te"?"చిన్న పొదుపు పథకాల తాజా రేట్లు":"Current small-savings scheme rates",source:"indiapost.gov.in",url:"https://www.indiapost.gov.in/"}
   ];
   box.replaceChildren();
   items.forEach(item => {
