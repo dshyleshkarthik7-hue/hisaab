@@ -13,6 +13,8 @@ services:
         value: "0.0.0.0"
       - key: HISAAB_RATE_LIMIT
         value: "60"
+      - key: HISAAB_GLOBAL_RATE_LIMIT
+        value: "120"
       - key: HISAAB_HTTP_THREADS
         value: "8"
       - key: HISAAB_TRUST_PROXY_HEADERS
