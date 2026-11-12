@@ -241,7 +241,7 @@ const translations = {
     "Your future isn't": "మీ భవిష్యత్తు",
     "one number.": "ఒకే సంఖ్య కాదు.",
     "Run thousands of plausible financial lives. See which goals survive inflation, market swings, income gaps and unexpected costs — then test what could improve the odds.": "వేల సాధ్యమైన ఆర్థిక భవిష్యత్తులను పరిశీలించండి. ద్రవ్యోల్బణం, మార్కెట్ మార్పులు, ఆదాయ అంతరాలు, అనుకోని ఖర్చుల మధ్య మీ లక్ష్యాలు ఎంతవరకు సాధ్యమో తెలుసుకోండి.",
-    "Production financial digital twin · No account connection · No personal data stored": "ప్రొడక్షన్ ఆర్థిక డిజిటల్ ట్విన్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు",
+    "Household-finance scenario simulator · No account connection · No personal data stored": "కుటుంబ ఆర్థిక సన్నివేశ సిమ్యులేటర్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు",
     "01 / YOUR BASELINE": "01 / మీ ప్రస్తుత ఆర్థిక స్థితి",
     "Start with today": "ఈరోజు స్థితితో ప్రారంభించండి",
     "About 2 minutes": "సుమారు 2 నిమిషాలు",
