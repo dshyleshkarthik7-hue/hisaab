@@ -45,11 +45,14 @@ jobs:
       - name: Install Chromium for browser/PDF validation
         working-directory: web
         run: npx playwright install --with-deps chromium
-      - name: Serve static Pages output
-        run: python -m http.server 8788 --directory web > /tmp/hisaab-http.log 2>&1 &
       - name: Browser end-to-end and PDF font smoke test
         working-directory: web
-        run: node tests/browser-pdf.test.mjs
+        run: |
+          python -m http.server 8788 --directory . > /tmp/hisaab-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          sleep 1
+          node tests/browser-pdf.test.mjs
       - name: Static artifact checks
         run: test -s web/index.html && test -s web/app.bundle.js && test -s web/src/workers/simulation.worker.bundle.js
       - name: No backend API dependencies in browser entrypoint
