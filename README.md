@@ -62,6 +62,6 @@ The tests cover input validation, deterministic reproducibility, expense/income 
 
 ## Deployment
 
-A production container definition and Render blueprint are included. The application uses Java 17 and Python 3.11+, with no third-party runtime dependencies. Set `HISAAB_HTTP_PORT` and `HISAAB_ENGINE_PORT` only when required by your platform. Do not expose the internal Python engine port publicly.
+A Docker container definition and Render blueprint are included. The runtime uses Java 21, Python 3.11+, ReportLab for PDF generation, and a Node 22 build stage for the TypeScript frontend. Set `HISAAB_HTTP_PORT` and `HISAAB_ENGINE_PORT` only when required by your platform. Do not expose the internal Python engine port publicly.
 
 This package has not been independently security-reviewed or production-certified. Run the automated checks and complete deployment-specific hardening before public use. Standard production controls remain your responsibility at the edge: managed TLS, WAF/rate limiting, uptime monitoring, and periodic review of the illustrative Tax Year 2026–27 salary estimator against current official rules. The application stores no user financial data.
