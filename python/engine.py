@@ -108,154 +108,117 @@ def percentile(values, q):
     lo = int(pos); hi = min(lo + 1, len(ordered) - 1)
     return ordered[lo] * (hi - pos) + ordered[hi] * (pos - lo)
 
-def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0):
-    p = validate(raw)
-    n = int(trials if trials is not None else p["trials"])
-    if not 100 <= n <= 10000:
-        raise InputError("trials must be between 100 and 10000")
-    rng = random.Random(p["seed"] if seed is None else seed)
-    years, goals = p["years"], p["goals"]
-    adjusted_goals = [dict(g, at=min(years, g["at"] + (delay if g["flex"] else 0))) for g in goals]
-    events_by_year = {}
-    for event in p["events"]:
-        events_by_year.setdefault(event["year"], []).append(event)
-    yearly_corpus = [[] for _ in range(years + 1)]
-    goal_hits = [0] * len(goals)
-    depleted = 0
-    all_hits = 0
-
-    # Annual inflation is sampled once per year, then compounded monthly.
-    for _ in range(n):
-        corpus = p["savings"]
-        income, planned_sip = p["income"], p["sip"] * sip_boost
-        base_expense = p["expense"]
-        annual_inflation = {k: 1.0 for k in KINDS}
-        monthly_inflation_factor = {k: 1.0 for k in KINDS}
-        expense_price_index = 1.0
-        success = [True] * len(goals)
-        unemployed_months = 0
-        yearly_corpus[0].append(corpus)
-        for month in range(1, years * 12 + 1):
-            if month % 12 == 1:
-                year_now = (month - 1) // 12 + 1
-                for event in events_by_year.get(year_now, []):
-                    if event["kind"] == "income_change":
-                        income += event["amount"]
-                    elif event["kind"] == "expense_change":
-                        base_expense += event["amount"]
-                    elif event["kind"] == "one_time_cost":
-                        corpus = max(0.0, corpus - event["amount"] * annual_inflation["general"])
-                for category, (mean, sd) in INFLATION.items():
-                    annual_rate = max(-0.02, rng.gauss(mean, sd)) / 100
-                    annual_inflation[category] *= 1 + annual_rate
-                    monthly_inflation_factor[category] = (1 + annual_rate) ** (1 / 12)
-            annual_log_return = math.log1p(p["ret"] / 100) - 0.5 * (p["vol"] / 100) ** 2
-            monthly_log_return = rng.gauss(annual_log_return / 12,
-                                           p["vol"] / math.sqrt(12) / 100)
-            monthly_return = math.expm1(monthly_log_return)
-            corpus *= 1 + monthly_return
-
-            monthly_expense = base_expense * expense_price_index
-            # Job loss lasts six months; during it, income and SIP stop.
-            if p["shocks"] and unemployed_months == 0 and rng.random() < 1 - (1 - 0.07) ** (1 / 12):
-                unemployed_months = 6
-            if unemployed_months:
-                unemployed_months -= 1
-                monthly_income = 0.0
-                contribution = 0.0
+def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=False):
+    """Reproducible monthly household simulation with optional 36-month goal de-risking."""
+    p=validate(raw); n=int(trials if trials is not None else p["trials"])
+    if not 100<=n<=10000: raise InputError("trials must be between 100 and 10000")
+    if not isinstance(glide_path,bool): raise InputError("glide_path must be true or false")
+    rng=random.Random(p["seed"] if seed is None else seed); years=p["years"]; goals=p["goals"]
+    adjusted=[dict(g,at=min(years,g["at"]+(delay if g["flex"] else 0))) for g in goals]
+    events={}
+    for ev in p["events"]: events.setdefault(ev["year"],[]).append(ev)
+    yearly=[[] for _ in range(years+1)]; hits=[0]*len(goals); failures=[0]*len(goals)
+    depleted=all_hits=shock_failures=0; samples=[]
+    for trial in range(n):
+        equity=p["savings"]; safe=0.0; reserves=[0.0]*len(goals)
+        income=p["income"]; sip=p["sip"]*sip_boost; expense=p["expense"]
+        infl={k:1.0 for k in KINDS}; monthly_infl={k:1.0 for k in KINDS}; expense_index=1.0
+        success=[True]*len(goals); unemployed=0; had_shock=False; shock_events=[]
+        path=[round(equity,2)]; yearly[0].append(equity)
+        for month in range(1,years*12+1):
+            if month%12==1:
+                y=(month-1)//12+1
+                for ev in events.get(y,[]):
+                    if ev["kind"]=="income_change": income+=ev["amount"]
+                    elif ev["kind"]=="expense_change": expense+=ev["amount"]
+                    else: equity-=ev["amount"]*infl["general"]
+                for k,(mean,sd) in INFLATION.items():
+                    rate=max(-.02,rng.gauss(mean,sd))/100; infl[k]*=1+rate; monthly_infl[k]=(1+rate)**(1/12)
+                if glide_path:
+                    for i,g in enumerate(adjusted):
+                        left=g["at"]-y
+                        if not g["flex"] and 0<=left<=3:
+                            target=g["cost"]*infl[g["kind"]]; pv=target/(1.065**left)
+                            move=min(max(0.0,equity),max(0.0,pv-reserves[i]))
+                            equity-=move; reserves[i]+=move
+            log_mean=math.log1p(p["ret"]/100)-.5*(p["vol"]/100)**2
+            equity*=1+math.expm1(rng.gauss(log_mean/12,p["vol"]/math.sqrt(12)/100))
+            safe*=1.065**(1/12); reserves=[v*1.065**(1/12) for v in reserves]
+            monthly_expense=expense*expense_index
+            if p["shocks"] and unemployed==0 and rng.random()<1-(1-.07)**(1/12):
+                unemployed=6; had_shock=True; shock_events.append({"month":month,"kind":"unemployment"})
+            if unemployed: unemployed-=1; monthly_income=0.0; contribution=0.0
             else:
-                monthly_income = income
-                contribution = min(planned_sip, max(0.0, monthly_income - monthly_expense))
-            deficit = max(0.0, monthly_expense - monthly_income)
-            corpus += contribution - deficit
-
-            if p["shocks"] and p["medical_shock"] and rng.random() < 1 - (1 - 0.05) ** (1 / 12):
-                corpus -= p["medical_shock"] * annual_inflation["medical"]
-            corpus = max(0.0, corpus)
-            expense_price_index *= monthly_inflation_factor["general"]
-            if monthly_income > 0:
-                monthly_income_growth = (1 + p["income_growth"] / 100) ** (1 / 12) - 1
-                income *= 1 + monthly_income_growth
-                planned_sip *= 1 + monthly_income_growth
-
-            if month % 12 == 0:
-                year = month // 12
-                for i, goal in enumerate(adjusted_goals):
-                    if goal["at"] == year:
-                        target = goal["cost"] * annual_inflation[goal["kind"]]
-                        if corpus >= target:
-                            corpus -= target
+                monthly_income=income; contribution=min(sip,max(0.0,monthly_income-monthly_expense))
+            equity+=contribution-max(0.0,monthly_expense-monthly_income)
+            if p["shocks"] and p["medical_shock"] and rng.random()<1-(1-.05)**(1/12):
+                cost=p["medical_shock"]*infl["medical"]; equity-=cost; had_shock=True
+                shock_events.append({"month":month,"kind":"medical","amount":round(cost,2)})
+            if equity<0: safe=max(0.0,safe+equity); equity=0.0
+            expense_index*=monthly_infl["general"]
+            if monthly_income>0:
+                growth=(1+p["income_growth"]/100)**(1/12)-1; income*=1+growth; sip*=1+growth
+            if month%12==0:
+                y=month//12
+                for i,g in enumerate(adjusted):
+                    if g["at"]==y:
+                        target=g["cost"]*infl[g["kind"]]; available=equity+safe+reserves[i]
+                        if available+.01>=target:
+                            rsv=min(reserves[i],target); reserves[i]-=rsv
+                            rem=target-rsv; from_safe=min(safe,rem); safe-=from_safe
+                            equity=max(0.0,equity-(rem-from_safe))
                         else:
-                            success[i] = False
-                            corpus = 0.0
-                yearly_corpus[year].append(corpus / annual_inflation["general"])
-        for i, ok in enumerate(success):
-            goal_hits[i] += int(ok)
-        all_hits += int(all(success))
-        depleted += int(corpus <= 0.01)
+                            success[i]=False
+                            if not g["flex"]: equity=safe=0.0; reserves=[0.0]*len(reserves)
+                real=(equity+safe+sum(reserves))/infl["general"]; yearly[y].append(real)
+                if trial<24: path.append(round(real,2))
+        for i,ok in enumerate(success): hits[i]+=int(ok); failures[i]+=int(not ok)
+        ok=all(success); all_hits+=int(ok); shock_failures+=int(not ok and had_shock)
+        depleted+=int(equity+safe+sum(reserves)<=.01)
+        if trial<24: samples.append({"ok":ok,"shocked":had_shock,"shock_events":shock_events,"values":path,"ending":equity+safe+sum(reserves)})
+    fan=[{"p10":round(percentile(v,.10),2),"p50":round(percentile(v,.50),2),"p90":round(percentile(v,.90),2)} for v in yearly]
+    if samples:
+        lo=min(range(len(samples)),key=lambda i:samples[i]["ending"])
+        mid=sorted(range(len(samples)),key=lambda i:samples[i]["ending"])[len(samples)//2]
+        shock=next((i for i,x in enumerate(samples) if x["shocked"]),lo)
+        for i,x in enumerate(samples):
+            x["label"]="worst_surviving" if i==lo and x["ok"] else "median" if i==mid else "depleted_or_shocked" if i==shock else "sample"
+            del x["ending"]
+    failed=max(1,n-all_hits)
+    weakest=min(({"name":g["name"],"odds":hits[i]/n} for i,g in enumerate(goals)),key=lambda x:x["odds"])
+    return {"score":all_hits/n,"trials":n,"seed":p["seed"] if seed is None else seed,
+      "goals":[{"name":g["name"],"at":adjusted[i]["at"],"odds":hits[i]/n} for i,g in enumerate(goals)],
+      "fan":fan,"sample_paths":samples,"ending":fan[-1],"depletion_odds":depleted/n,
+      "diagnostics":{"shock_attributed_failure_share":round(shock_failures/failed,3) if all_hits<n else 0.0,
+       "weakest_goal":weakest,"goal_failure_share":[{"name":g["name"],"failed_trials":failures[i],"failure_share":round(failures[i]/n,3)} for i,g in enumerate(goals)]},
+      "assumptions":{"monthly_cashflow":True,"expense_inflation":"general","goal_inflation":"category-specific","job_loss_months":6,
+       "job_loss_annual_probability":.07,"medical_event_annual_probability":.05,"glide_path_enabled":glide_path,"debt_bucket_return":.065,
+       "life_events":p["events"],"return_model":"lognormal monthly returns calibrated to annual arithmetic mean and volatility"}}
 
-    fan = [{"p10": round(percentile(v, .10), 2), "p50": round(percentile(v, .50), 2),
-            "p90": round(percentile(v, .90), 2)} for v in yearly_corpus]
-    return {
-        "score": all_hits / n,
-        "trials": n,
-        "seed": p["seed"] if seed is None else seed,
-        "goals": [{"name": g["name"], "at": adjusted_goals[i]["at"], "odds": goal_hits[i] / n}
-                  for i, g in enumerate(goals)],
-        "fan": fan,
-        "ending": fan[-1],
-        "depletion_odds": depleted / n,
-        "assumptions": {"monthly_cashflow": True, "expense_inflation": "general",
-                        "goal_inflation": "category-specific", "job_loss_months": 6,
-                        "job_loss_annual_probability": 0.07,
-                        "medical_event_annual_probability": 0.05,
-                        "life_events": p["events"],
-                        "return_model": "lognormal monthly returns calibrated to annual arithmetic mean and volatility"}
-    }
+def target_sip(p,base,target=.85):
+    """Binary-search the smallest SIP multiplier reaching the target success odds."""
+    p=validate(p)
+    if base["score"]>=target: return {"target_score":target,"monthly_sip":p["sip"],"additional_monthly_sip":0.0,"reachable":True}
+    low,high=1.0,16.0; best=None
+    for _ in range(12):
+        mid=(low+high)/2; score=simulate(p,trials=p["trials"],seed=p["seed"],sip_boost=mid)["score"]
+        if score>=target: best=mid; high=mid
+        else: low=mid
+    mult=best if best is not None else high; monthly=p["sip"]*mult
+    return {"target_score":target,"monthly_sip":round(monthly,2),"additional_monthly_sip":round(max(0,monthly-p["sip"]),2),"reachable":best is not None}
 
-def nudge(p, base):
-    """Return a three-way comparison using common random numbers.
-
-    Always returns Baseline + two alternative scenarios so the UI can show
-    a fair side-by-side comparison. Also surfaces the single best improvement
-    as the legacy "nudge" for older clients.
-    """
-    p = validate(p)
-    seed = p["seed"]
-    trials = p["trials"]
-
-    alternatives = [
-        ("Baseline", {}),
-        ("SIP +15%", {"sip_boost": 1.15}),
-        ("SIP +30%", {"sip_boost": 1.30}),
-    ]
-    can_delay = any(g["flex"] for g in p["goals"]) and all(
-        g["at"] + 2 <= p["years"] for g in p["goals"] if g["flex"]
-    )
-    if can_delay:
-        alternatives[2] = ("Delay flexible goals by 2 years", {"delay": 2})
-
-    scenarios = []
-    for label, change in alternatives:
-        result = simulate(p, trials=trials, seed=seed, **change)
-        scenarios.append({
-            "label": label,
-            "score": result["score"],
-            "depletion_odds": result["depletion_odds"],
-            "ending_median": result["ending"]["p50"],
-            "goals": [{"name": g["name"], "odds": g["odds"]} for g in result["goals"]],
-        })
-
-    # Keep legacy single-best nudge for older front-ends
-    best = max(scenarios[1:], key=lambda x: x["score"])
-    legacy = None
-    if best["score"] > base["score"] + 0.005:
-        legacy = {"text": best["label"], "score": best["score"]}
-
-    return {
-        "scenarios": scenarios,
-        "best": legacy,
-    }
+def nudge(p,base):
+    """Four scenario comparisons using common random numbers."""
+    p=validate(p); seed=p["seed"]; trials=p["trials"]
+    options=[("Baseline",{}),("3-Yr Debt Glide-Path",{"glide_path":True}),("SIP +15%",{"sip_boost":1.15}),("SIP +30% + Glide-Path",{"sip_boost":1.30,"glide_path":True})]
+    scenarios=[]
+    for label,change in options:
+        r=simulate(p,trials=trials,seed=seed,**change)
+        scenarios.append({"label":label,"score":r["score"],"depletion_odds":r["depletion_odds"],"ending_median":r["ending"]["p50"],
+          "goals":[{"name":g["name"],"odds":g["odds"]} for g in r["goals"]]})
+    best=max(scenarios[1:],key=lambda x:x["score"])
+    return {"scenarios":scenarios,"best":{"text":best["label"],"score":best["score"]} if best["score"]>base["score"]+.005 else None,
+      "target_sip":target_sip(p,base)}
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
