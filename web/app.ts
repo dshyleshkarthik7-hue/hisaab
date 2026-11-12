@@ -114,8 +114,11 @@ function show(r: Result): void {
   const compare = $("compareGrid");
   const n = r.nudge;
   const scenarios = n && Array.isArray(n.scenarios) ? n.scenarios : null;
+  const runScenariosButton=$("runScenarios") as HTMLButtonElement, targetButton=$("findTargetSip") as HTMLButtonElement;
   if (scenarios && scenarios.length >= 2) {
     card.hidden = false;
+    runScenariosButton.hidden=true; targetButton.hidden=!!n?.target_sip;
+    targetButton.textContent=language==="te"?"85% లక్ష్య SIP లెక్కించండి":"Find SIP for 85% success";
     $("nudgeTitle").textContent = language === "te" ? "నాలుగు సన్నివేశాల పోలిక" : "Four-way scenario comparison";
     $("nudgeText").textContent = language === "te"
       ? "అదే యాదృచ్ఛిక జీవితాలతో బేస్‌లైన్ మరియు మూడు ప్రత్యామ్నాయాలు."
@@ -133,22 +136,37 @@ function show(r: Result): void {
         compare.append(art);
       });
       const target=n?.target_sip, targetNode=document.getElementById("targetSip");
-      if(targetNode){targetNode.textContent=target ? (language==="te" ? `85% లక్ష్యానికి అవసరమైన అంచనా SIP: ₹${Math.round(target.monthly_sip).toLocaleString("en-IN")} · అదనంగా ₹${Math.round(target.additional_monthly_sip).toLocaleString("en-IN")} / నెల · ${target.reachable?"సాధ్యం":"ఈ నమూనాలో సాధ్యం కాలేదు"}` : `Estimated SIP for ${Math.round(target.target_score*100)}% goal success: ${inr(target.monthly_sip)} / month · Additional ${inr(target.additional_monthly_sip)} / month · ${target.reachable?"Reachable in this model":"Not reachable within the modelled income ceiling"}`) : ""; }
+      if(targetNode){targetNode.textContent=target ? (language==="te" ? `85% లక్ష్యానికి అవసరమైన అంచనా SIP: ₹${Math.round(target.monthly_sip).toLocaleString("en-IN")} · అదనంగా ₹${Math.round(target.additional_monthly_sip).toLocaleString("en-IN")} / నెల · ${target.reachable?"సాధ్యం":"ఈ నమూనాలో సాధ్యం కాలేదు"}` : `Estimated SIP for ${Math.round(target.target_score*100)}% goal success: ${inr(target.monthly_sip)} / month · Additional ${inr(target.additional_monthly_sip)} / month · ${target.reachable?"Reachable in this model":"Not reachable within the modelled income ceiling"}`) : (language==="te"?"85% లక్ష్యానికి అవసరమైన SIPను లెక్కించండి.":"Calculate the monthly SIP needed to reach 85% all-goals success."); }
       const shockNode=document.getElementById("shockComparison");
       if(shockNode){const entries=Object.entries(n?.shock_counterfactuals??{});shockNode.replaceChildren(el("strong","",language==="te"?"జత చేసిన షాక్ పోలిక":"Paired shock counterfactuals"));for(const [key,value] of entries){shockNode.append(el("p","",`${key}: ${value.failures_prevented_if_removed} failures avoided, ${value.new_failures_in_counterfactual} new failures, net ${value.net_failure_reduction} across ${value.paired_trials} paired trials`));}}
     } else {
       const targetNode=document.getElementById("targetSip");if(targetNode)targetNode.textContent="";const shockNode=document.getElementById("shockComparison");if(shockNode)shockNode.textContent="";
     }
   } else {
-    const best = n && (n.best || (n.text ? { text: n.text, score: n.score! } : null));
-    card.hidden = !best;
-    if (best) {
-      $("nudgeTitle").textContent = best.text || "";
-      $("nudgeText").textContent = `The tested scenario raised the all-goals success rate to ${Math.round((best.score || 0) * 100)}%.`;
-    }
-    if (compare) compare.innerHTML = "";
+    card.hidden=false; runScenariosButton.hidden=false; targetButton.hidden=true;
+    runScenariosButton.disabled=false; runScenariosButton.textContent=language==="te"?"నాలుగు సన్నివేశాలను పోల్చండి":"Run four-way comparison";
+    $("nudgeTitle").textContent=language==="te"?"సన్నివేశాల ప్రయోగశాల":"Scenario Lab";
+    $("nudgeText").textContent=language==="te"?"ముందుగా ప్రాథమిక ఫలితం సిద్ధంగా ఉంది. ప్రత్యామ్నాయ సన్నివేశాలు మరియు షాక్ విశ్లేషణను అవసరమైనప్పుడు అమలు చేయండి.":"Baseline is ready. Run the four-way comparison and paired shock analysis when you need it; these extra runs are intentionally on demand for high trial counts.";
+    if(compare)compare.replaceChildren();
+    const targetNode=document.getElementById("targetSip");if(targetNode)targetNode.textContent="";
+    const shockNode=document.getElementById("shockComparison");if(shockNode)shockNode.replaceChildren();
   }
 }
+
+$("runScenarios").addEventListener("click",async()=>{
+  if(!lastInput||!lastResult)return;
+  const button=$("runScenarios") as HTMLButtonElement;button.disabled=true;button.textContent=language==="te"?"సన్నివేశాలను లెక్కిస్తోంది…":"Running scenario comparisons…";
+  try{const result=await runInWorker(lastInput,"scenarios",lastResult);lastResult.nudge=result as NudgePayload;show(lastResult);}
+  catch(error){$("err").textContent="Scenario comparison failed: "+(error as Error).message;$("err").hidden=false;}
+  finally{button.disabled=false;$("run").replaceChildren(document.createTextNode("Run the futures "),el("span","","↗"));}
+});
+$("findTargetSip").addEventListener("click",async()=>{
+  if(!lastInput||!lastResult)return;
+  const button=$("findTargetSip") as HTMLButtonElement;button.disabled=true;button.textContent=language==="te"?"SIP లక్ష్యాన్ని లెక్కిస్తోంది…":"Finding target SIP…";
+  try{const target=await runInWorker(lastInput,"target",lastResult);lastResult.nudge={...(lastResult.nudge as NudgePayload),target_sip:target};show(lastResult);}
+  catch(error){$("err").textContent="Target SIP search failed: "+(error as Error).message;$("err").hidden=false;}
+  finally{button.disabled=false;$("run").replaceChildren(document.createTextNode("Run the futures "),el("span","","↗"));}
+});
 
 $("sim").addEventListener("submit", async event => {
   event.preventDefault();
