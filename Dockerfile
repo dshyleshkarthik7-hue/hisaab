@@ -2,15 +2,17 @@
 FROM eclipse-temurin:21-jdk-jammy
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 python3-pip ca-certificates \
+    && apt-get install -y --no-install-recommends python3 python3-pip nodejs npm ca-certificates \
        fonts-dejavu-core \
     && pip3 install --no-cache-dir -r requirements.txt \
+    && npm install --global typescript@5.7.3 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system hisaab \
     && useradd --system --gid hisaab --home /app --shell /usr/sbin/nologin hisaab
 
 WORKDIR /app
 COPY --chown=hisaab:hisaab . .
+RUN tsc -p web
 
 # Bundle Telugu-capable font into image for PDF embedding
 RUN mkdir -p /app/fonts \
