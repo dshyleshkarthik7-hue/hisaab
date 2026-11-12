@@ -14,7 +14,7 @@ For each trial and month:
 4. If employed, calculate the contribution as the lower of planned SIP and income remaining after household expenses. If expenses exceed income, withdraw the deficit from the corpus. Any surplus above the planned SIP is intentionally not added to the corpus; this keeps the input SIP meaningful and is a conservative omission.
 5. A job-loss event can occur with a 7% annual probability. It lasts six months; income and SIP stop during that period while household expenses continue.
 6. A medical event can occur with a 5% annual probability and withdraws the configured medical amount inflated by the medical index.
-7. At each goal year, inflate the goal's present-day cost by its category index. Pay it if the corpus can cover it; otherwise mark that goal unsuccessful and set the corpus to zero.
+7. At each goal year, inflate the goal's present-day cost by its category index. Pay it if the corpus can cover it; otherwise mark that goal unsuccessful and, for a mandatory goal, set remaining portfolio funds to zero. With glide-path enabled, a modelled debt reserve is built for mandatory goals within 36 months of their due year.
 
 ## Outputs
 
@@ -26,11 +26,11 @@ For each trial and month:
 
 ## Reproducibility and interpretation
 
-A fixed seed recreates the same scenario stream. Changing the seed generates another plausible sample; it does not change the assumptions. The displayed percentage is a model result conditional on the entered assumptions, not the real-world probability that a household will succeed.
+A fixed seed recreates the same scenario stream. Separate deterministic random streams are used for market returns, debt returns, inflation, unemployment and medical events, so counterfactual shock-removal runs retain identical market and inflation paths. Changing the seed generates another plausible sample; it does not change the assumptions. The displayed percentage is a model result conditional on the entered assumptions, not the real-world probability that a household will succeed.
 
 ## Important omissions
 
-The model does not include taxes on investments, fees, asset allocation, debt repayments, insurance payouts, government benefits, changing household size, variable job-loss duration, medical-cost coverage, correlated inflation/market shocks, fat-tailed market returns or volatility clustering. The independent normal inflation and lognormal return assumptions are simplifications. It does not model bank deposits and investment assets separately. SIP contributions are capped at monthly surplus; excess surplus is not accumulated. The model assumes the same job-loss and medical-event probabilities for every household.
+The model does not include taxes on investments, fees, asset allocation, debt repayments, insurance payouts, government benefits, changing household size, variable job-loss duration, medical-cost coverage, correlated inflation/market shocks, fat-tailed market returns or volatility clustering. The independent normal inflation and lognormal return assumptions are simplifications. It does not model bank deposits and investment assets separately. SIP contributions are capped at monthly surplus; excess surplus is not accumulated. The model assumes the same job-loss and medical-event probabilities for every household. The optional 36-month mandatory-goal glide path transfers an estimated present value into a debt reserve modelled with 6.5% annual arithmetic return and 0.5% annual volatility; the reserve is not a guaranteed deposit or RBI-linked product.
 
 ## Inflation assumptions
 
@@ -54,3 +54,17 @@ Official reference pages used for the displayed tax assumptions:
 - [Income Tax Department — tax rates and computation](https://wm.incometax.gov.in/w/tax-rates-and-computation)
 - [Income Tax Department — deductions and standard deduction](https://wm.incometax.gov.in/w/deductions-allowable-to-tax-payer)
 - [Ministry of Finance — Budget 2026 tax-rate FAQ](https://www.incometaxindia.gov.in/documents/20117/15766092/FAQs-Budget-2026.pdf/ff3d0e10-88a0-b11f-3c27-b58375974227?download=true&t=1770036575267&version=1.0)
+
+
+## Parallel trajectories and shock counterfactuals
+
+The response returns 25 representative household trajectories, including the lowest-ending successful path when one exists, the median-ending path and a stressed/depleted/shocked example when available. These are selected from the full trial population; they are illustrative samples, not 25 additional trials.
+
+The diagnostic `failed_lives_with_shock_share` is an association statistic only. The Scenario Lab additionally compares each baseline trial with a paired run that removes unemployment or medical events while retaining the same deterministic market, debt and inflation streams. `failures_prevented_if_removed` and `net_failure_reduction` are counterfactual differences conditional on this model. They do not establish real-world causality and may not add up because shocks can interact.
+
+The target-SIP search uses the configured trial count for every bisection evaluation and returns the achieved score and trial count. Its result is conditional on the fixed seed and model assumptions; it is not an exact real-world required contribution.
+
+
+## Tax rule-pack scope
+
+The Tax Year 2026–27 salary/tax rule pack uses the published new-regime slabs, ₹12 lakh Section 87A threshold with marginal relief, and 4% health and education cess. The comparison is deliberately restricted to taxable/gross income up to ₹50 lakh because surcharge is not implemented in this calculator. The old-regime path is illustrative and assumes a non-senior resident individual eligible for Section 87A; age-specific slab differences are not modelled, and Chapter VI-A deductions are entered as one aggregate. This is not a tax-return computation. Official reference: https://wm.incometaxindia.gov.in/w/tax-rates-and-computation

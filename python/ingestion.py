@@ -102,16 +102,31 @@ def list_candidates() -> list[dict[str, Any]]:
 
 def approve_candidate(filename: str, reviewer: str = "operator") -> dict[str, Any]:
     _ensure_dirs()
-    src = CANDIDATES / filename
-    if not src.is_file():
-        raise FileNotFoundError(filename)
-    data = json.loads(src.read_text(encoding="utf-8"))
+    safe_name = Path(filename).name
+    if not safe_name or safe_name != filename or safe_name in (".", ".."):
+        raise ValueError("Invalid candidate filename")
+    candidates_root = CANDIDATES.resolve()
+    approved_root = APPROVED.resolve()
+    src = CANDIDATES / safe_name
+    # Reject symlinks and any resolved path that escapes the configured queue.
+    if src.is_symlink():
+        raise ValueError("Candidate symlinks are not permitted")
+    resolved_src = src.resolve(strict=True)
+    if not resolved_src.is_relative_to(candidates_root) or not resolved_src.is_file():
+        raise ValueError("Candidate path is outside the candidate queue")
+    data = json.loads(resolved_src.read_text(encoding="utf-8"))
     data["approved"] = True
     data["approved_at"] = datetime.now(timezone.utc).isoformat()
     data["approved_by"] = reviewer
     data["status"] = "approved"
-    dest = APPROVED / filename
-    dest.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    dest = APPROVED / safe_name
+    if dest.is_symlink() or not dest.resolve().is_relative_to(approved_root):
+        raise ValueError("Approved destination must remain inside the approved queue")
+    temp = APPROVED / (safe_name + ".tmp")
+    if temp.is_symlink() or not temp.resolve().is_relative_to(approved_root):
+        raise ValueError("Invalid approval destination")
+    temp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    temp.replace(dest)
     return data
 
 

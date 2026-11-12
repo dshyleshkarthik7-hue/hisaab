@@ -4,6 +4,7 @@ Deterministic calculations only. AI must never invent slabs or rebates.
 """
 from __future__ import annotations
 from dataclasses import dataclass, asdict
+import math
 from typing import Any
 
 # Verified rule pack for Tax Year 2026–27 (new regime default path used by Hisaab).
@@ -12,7 +13,7 @@ RULES_TY_2026_27_NEW = {
     "tax_year": "2026-27",
     "regime": "new",
     "source": "Income Tax Department",
-    "source_url": "https://www.incometax.gov.in/",
+    "source_url": "https://wm.incometaxindia.gov.in/w/tax-rates-and-computation",
     "effective_from": "2026-04-01",
     "verified_on": "2026-11-12",
     "status": "published",
@@ -39,7 +40,7 @@ RULES_TY_2026_27_OLD = {
     "tax_year": "2026-27",
     "regime": "old",
     "source": "Income Tax Department",
-    "source_url": "https://www.incometax.gov.in/",
+    "source_url": "https://wm.incometaxindia.gov.in/w/tax-rates-and-computation",
     "effective_from": "2026-04-01",
     "verified_on": "2026-11-12",
     "status": "published",
@@ -53,8 +54,8 @@ RULES_TY_2026_27_OLD = {
     "rebate_87a_limit": 500_000,
     "cess": 0.04,
     "notes": [
-        "Old regime illustrative path. Chapter VI-A deductions are user-supplied aggregate.",
-        "Exact eligibility depends on individual facts; this is not a filing computation.",
+        "Old regime illustrative path. Resident individual eligibility for Section 87A is assumed; Chapter VI-A deductions are user-supplied aggregate.",
+        "Assumes a non-senior individual; age-specific slab differences are not modelled. Exact eligibility depends on individual facts; this is not a filing computation.",
     ],
 }
 
@@ -97,8 +98,12 @@ def compute_tax(
     For new regime, taxable_income should already reflect standard deduction.
     For old regime, chapter_via_deductions reduces taxable income further.
     """
-    if taxable_income < 0 or not (taxable_income == taxable_income):  # NaN check
+    if isinstance(taxable_income, bool) or not isinstance(taxable_income, (int, float)) or not math.isfinite(taxable_income) or taxable_income < 0:
         raise ValueError("taxable_income must be a non-negative finite number")
+    if taxable_income > 5_000_000:
+        raise ValueError("This illustrative rule pack excludes surcharge; taxable income is limited to ₹50 lakh.")
+    if isinstance(chapter_via_deductions, bool) or not isinstance(chapter_via_deductions, (int, float)) or not math.isfinite(chapter_via_deductions) or chapter_via_deductions < 0:
+        raise ValueError("chapter_via_deductions must be a non-negative finite number")
     rules = get_rules(tax_year, regime)
     base = max(0.0, taxable_income - (chapter_via_deductions if regime == "old" else 0.0))
 
@@ -132,12 +137,14 @@ def compute_tax(
         rebate = tax
         tax = 0.0
 
+    # Apply Section 87A marginal relief before adding health and education cess.
+    if regime == "new" and base > rebate_limit:
+        # Marginal relief is an additional Section 87A rebate before cess.
+        pre_relief_tax = tax
+        tax = min(tax, base - rebate_limit)
+        rebate += pre_relief_tax - tax
     cess = tax * rules["cess"]
     total = tax + cess
-
-    # Marginal relief style cap used in gateway for new regime near rebate boundary
-    if regime == "new" and base > rebate_limit and base <= rebate_limit + 100_000:
-        total = min(total, base - rebate_limit)
 
     return {
         "tax_year": rules["tax_year"],
@@ -163,6 +170,8 @@ def compute_tax(
 
 def compare_regimes(gross_taxable_before_sd: float, chapter_via: float = 0.0) -> dict[str, Any]:
     """Compare new vs old regime for the same starting income."""
+    if isinstance(gross_taxable_before_sd, bool) or not isinstance(gross_taxable_before_sd, (int, float)) or not math.isfinite(gross_taxable_before_sd) or gross_taxable_before_sd < 0 or gross_taxable_before_sd > 5_000_000:
+        raise ValueError("This illustrative comparison excludes surcharge and is limited to income up to ₹50 lakh.")
     new_rules = get_rules("2026-27", "new")
     old_rules = get_rules("2026-27", "old")
     new_taxable = max(0.0, gross_taxable_before_sd - new_rules["standard_deduction"])

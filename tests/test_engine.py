@@ -77,13 +77,66 @@ class EngineTests(unittest.TestCase):
         base = engine.simulate(BASE, trials=300)
         payload = engine.nudge(BASE, base)
         self.assertIn("scenarios", payload)
-        self.assertEqual(len(payload["scenarios"]), 3)
+        self.assertEqual(len(payload["scenarios"]), 4)
         labels = [s["label"] for s in payload["scenarios"]]
         self.assertEqual(labels[0], "Baseline")
         for s in payload["scenarios"]:
             self.assertTrue(0 <= s["score"] <= 1)
             self.assertIn("ending_median", s)
             self.assertIn("depletion_odds", s)
+
+    def test_sample_paths_and_diagnostics_are_returned(self):
+        result = engine.simulate(BASE, trials=300)
+        self.assertEqual(len(result["sample_paths"]), 25)
+        self.assertIn("label", result["sample_paths"][0])
+        self.assertIn("weakest_goal", result["diagnostics"])
+        self.assertIn("failed_lives_with_shock_share", result["diagnostics"])
+        self.assertIn("debt_bucket_volatility", result["assumptions"])
+        self.assertEqual(len(result["_trial_success"]), 300)
+
+    def test_glide_path_is_reported_and_reproducible(self):
+        raw = {**BASE, "years": 5, "goals": [{"name": "Education", "at": 4, "cost": 500000, "kind": "education", "flex": False}]}
+        a = engine.simulate(raw, trials=300, glide_path=True)
+        b = engine.simulate(raw, trials=300, glide_path=True)
+        self.assertEqual(a, b)
+        self.assertTrue(a["assumptions"]["glide_path_enabled"])
+
+    def test_target_sip_is_bounded(self):
+        result = engine.target_sip(BASE, engine.simulate(BASE, trials=300))
+        self.assertGreaterEqual(result["additional_monthly_sip"], 0)
+        self.assertEqual(result["trials"], BASE["trials"])
+        self.assertIn("achieved_score", result)
+
+
+
+    def test_paired_shock_counterfactuals_use_same_trial_paths(self):
+        raw = {**BASE, "shocks": True, "years": 8, "medical_shock": 250000}
+        base = engine.simulate(raw, trials=300)
+        result = engine.nudge(raw, base)
+        self.assertIn("unemployment", result["shock_counterfactuals"])
+        self.assertIn("medical", result["shock_counterfactuals"])
+        for item in result["shock_counterfactuals"].values():
+            self.assertEqual(item["paired_trials"], 300)
+            self.assertGreaterEqual(item["failures_prevented_if_removed"], 0)
+
+    def test_ingestion_rejects_path_traversal(self):
+        import ingestion
+        with self.assertRaises(ValueError):
+            ingestion.approve_candidate("../outside.json")
+
+    def test_tax_engine_rejects_income_above_no_surcharge_scope(self):
+        import tax_engine
+        with self.assertRaises(ValueError):
+            tax_engine.compute_tax(5_000_001, regime="new")
+        with self.assertRaises(ValueError):
+            tax_engine.compare_regimes(5_000_001)
+
+    def test_new_regime_marginal_relief_is_applied_before_cess(self):
+        import tax_engine
+        taxable = 1_200_001
+        result = tax_engine.compute_tax(taxable, regime="new")
+        self.assertLessEqual(result["total_tax"], (taxable - 1_200_000) * 1.04 + 0.01)
+        self.assertGreater(result["rebate_87a"], 0)
 
 if __name__ == "__main__":
     unittest.main()

@@ -71,10 +71,7 @@ public final class Hisaab {
   }
 
   private static String clientIp(HttpExchange x) {
-    String xf = x.getRequestHeaders().getFirst("X-Forwarded-For");
-    if (xf != null && !xf.isBlank()) {
-      return xf.split(",")[0].trim();
-    }
+    // Do not trust caller-controlled X-Forwarded-For; edge proxies should rate-limit upstream.
     InetSocketAddress addr = x.getRemoteAddress();
     return addr == null || addr.getAddress() == null ? "unknown" : addr.getAddress().getHostAddress();
   }
@@ -135,7 +132,8 @@ public final class Hisaab {
       lower = slab[0];
     }
     if (taxable <= 1_200_000) return 0;
-    return Math.min(tax * 1.04, taxable - 1_200_000);
+    tax = Math.min(tax, taxable - 1_200_000);
+    return tax * 1.04;
   }
 
   private static void emi(HttpExchange x) throws IOException {
@@ -157,7 +155,7 @@ public final class Hisaab {
     if (!x.getRequestMethod().equals("GET")) { method(x, "GET"); return; }
     try {
       Map<String, Double> m = query(x.getRequestURI().getRawQuery());
-      double ctc = required(m, "ctc", 0, 5e7);
+      double ctc = required(m, "ctc", 0, 5e6);
       double basicPct = required(m, "basic", 0, 100);
       double pt = required(m, "pt", 0, 50000);
       double basic = ctc * basicPct / 100.0;
@@ -259,7 +257,13 @@ public final class Hisaab {
         return;
       }
       Path file = WEB.resolve(path.substring(1)).normalize();
+      Path webRoot = WEB.toRealPath();
       if (!file.startsWith(WEB) || !Files.isRegularFile(file)) {
+        send(x, 404, "text/plain", "Not found".getBytes(StandardCharsets.UTF_8));
+        return;
+      }
+      file = file.toRealPath();
+      if (!file.startsWith(webRoot)) {
         send(x, 404, "text/plain", "Not found".getBytes(StandardCharsets.UTF_8));
         return;
       }

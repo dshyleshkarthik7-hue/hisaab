@@ -71,7 +71,9 @@ def main():
         status, body = request(base + "/api/tax?ctc=1275000&basic=0&pt=0")
         assert status == 200 and json.loads(body)["tax"] == 0
         status, body = request(base + "/api/tax?ctc=1276000&basic=0&pt=0")
-        assert status == 200 and json.loads(body)["tax"] == 1000
+        assert status == 200 and json.loads(body)["tax"] == 1040
+        status, _ = request(base + "/api/tax?ctc=50000001&basic=0&pt=0")
+        assert status == 400
 
         scenario = {
             "years": 2, "savings": 500000, "income": 100000, "sip": 25000,
@@ -84,6 +86,14 @@ def main():
         result = json.loads(body)
         assert status == 200 and result["trials"] == 2000
         assert 0 <= result["score"] <= 1 and len(result["fan"]) == 3
+        status, pdf = request(base + "/api/report/pdf", {"lang": "en", "inputs": {**scenario, "events": []}, "result": result})
+        assert status == 200 and pdf.startswith(b"%PDF"), "PDF endpoint did not return a valid PDF"
+        status, telugu_pdf = request(base + "/api/report/pdf", {
+            "lang": "te",
+            "inputs": {**scenario, "events": []},
+            "result": result,
+        })
+        assert status == 200 and telugu_pdf.startswith(b"%PDF") and b"FontFile2" in telugu_pdf, "Telugu PDF font was not embedded"
 
         status, _ = request(base + "/api/simulate", {"years": 99})
         assert status == 400

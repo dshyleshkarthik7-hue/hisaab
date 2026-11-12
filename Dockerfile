@@ -1,16 +1,24 @@
-# Hisaab production image — Java 21 gateway + Python 3 engine
+# Compile the browser bundle from the maintained TypeScript source.
+FROM node:22-alpine AS frontend
+WORKDIR /src
+COPY web/app.ts web/tsconfig.json ./web/
+RUN npm install --global typescript@5.7.3 && tsc -p web
+
+# Hisaab Java gateway + Python simulation engine.
 FROM eclipse-temurin:21-jdk-jammy
 
+COPY requirements.txt /tmp/requirements.txt
+
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 python3-pip ca-certificates \
-       fonts-dejavu-core \
-    && pip3 install --no-cache-dir reportlab \
+    && apt-get install -y --no-install-recommends python3 python3-pip ca-certificates fonts-dejavu-core \
+    && pip3 install --no-cache-dir -r /tmp/requirements.txt \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system hisaab \
     && useradd --system --gid hisaab --home /app --shell /usr/sbin/nologin hisaab
 
 WORKDIR /app
 COPY --chown=hisaab:hisaab . .
+COPY --from=frontend --chown=hisaab:hisaab /src/web/app.js /app/web/app.js
 
 # Bundle Telugu-capable font into image for PDF embedding
 RUN mkdir -p /app/fonts \

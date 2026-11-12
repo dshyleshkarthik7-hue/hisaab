@@ -1,0 +1,42 @@
+name: Hisaab CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Python runtime dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Python unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Python syntax checks
+        run: python -m compileall -q python tests
+      - name: TypeScript source check
+        run: npx --yes --package typescript@5.7.3 tsc -p web
+      - name: Java compile
+        run: javac java/Hisaab.java
+      - name: Browser JavaScript syntax
+        run: node --check web/app.js
+      - name: Full-stack smoke test
+        run: python tests/smoke.py
+      - name: Docker image build
+        run: docker build -t hisaab:ci .
