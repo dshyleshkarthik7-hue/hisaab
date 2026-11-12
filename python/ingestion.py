@@ -102,7 +102,10 @@ def list_candidates() -> list[dict[str, Any]]:
 
 def approve_candidate(filename: str, reviewer: str = "operator") -> dict[str, Any]:
     _ensure_dirs()
-    src = CANDIDATES / filename
+    safe_name = Path(filename).name
+    if not safe_name or safe_name != filename or safe_name in (".", ".."):
+        raise ValueError("Invalid candidate filename")
+    src = CANDIDATES / safe_name
     if not src.is_file():
         raise FileNotFoundError(filename)
     data = json.loads(src.read_text(encoding="utf-8"))
@@ -110,7 +113,7 @@ def approve_candidate(filename: str, reviewer: str = "operator") -> dict[str, An
     data["approved_at"] = datetime.now(timezone.utc).isoformat()
     data["approved_by"] = reviewer
     data["status"] = "approved"
-    dest = APPROVED / filename
+    dest = APPROVED / safe_name
     dest.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     return data
 
