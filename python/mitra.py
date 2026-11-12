@@ -49,7 +49,7 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
     sources = _sources_block(lang)
 
     # Live sensitivity analysis uses the exact current household inputs and deterministic engine.
-    elif context.get("inputs") and any(k in ql for k in ("85%", "85 percent", "extra sip", "increase sip", "monthly sip needed", "fragile", "weakest goal", "bottleneck")):
+    if context.get("inputs") and any(k in ql for k in ("85%", "85 percent", "extra sip", "increase sip", "monthly sip needed", "fragile", "weakest goal", "bottleneck")):
         try:
             from engine import simulate, target_sip
             raw = context["inputs"]
@@ -73,7 +73,7 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
             reply = "Run a valid household simulation first, then ask for the SIP needed to reach 85%."
 
     # Tax slabs / rules
-    if any(k in ql for k in ("tax slab", "tax rule", "income tax", "పన్ను", "స్లాబ్", "87a", "regime")):
+    elif any(k in ql for k in ("tax slab", "tax rule", "income tax", "పన్ను", "స్లాబ్", "87a", "regime")):
         rules = get_rules("2026-27", "new")
         if lang == "te":
             lines = [
