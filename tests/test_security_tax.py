@@ -48,6 +48,9 @@ class SecurityAndTaxTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     ingestion.approve_candidate("candidate.json")
 
+    def test_tax_rule_packs_are_marked_illustrative(self):
+        self.assertTrue(all(pack["status"] == "illustrative" for pack in tax_engine.list_rule_packs()))
+
     def test_reference_data_does_not_publish_unverified_rates(self):
         snap = data_service.snapshot()
         self.assertEqual(snap["status"], "reference_links_only")
