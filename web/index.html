@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101b2b">
+  <meta name="description" content="Explore possible financial futures with Hisaab: a transparent Indian household finance simulator for goals, inflation and uncertainty.">
+  <title>Hisaab — Your future, in many possible lives</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell">
+  <header class="hero">
+    <div class="topbar"><div class="brand"><span class="brand-mark">హి</span><span>HISAAB <small>THE MANY-LIVES MONEY LAB</small></span></div><button type="button" id="langToggle" class="language-toggle" aria-label="Switch language">తెలుగు</button></div>
+    <div class="hero-copy">
+      <p class="eyebrow">PLAN FOR UNCERTAINTY, NOT JUST AVERAGES</p>
+      <h1>Your future isn't<br><em>one number.</em></h1>
+      <p class="lede">Run thousands of plausible financial lives. See which goals survive inflation, market swings, income gaps and unexpected costs — then test what could improve the odds.</p>
+      <div class="hero-note"><span class="pulse"></span> Production financial digital twin · No account connection · No personal data stored</div>
+    </div>
+    <div class="hero-orbit" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orbit-core">₹</div><span class="orbit-label label-a">LIFE A</span><span class="orbit-label label-b">LIFE 2,000</span></div>
+  </header>
+
+  <main>
+    <section class="panel setup-panel">
+      <div class="section-head"><div><p class="eyebrow">01 / YOUR BASELINE</p><h2>Start with today</h2></div><span class="step-tag">About 2 minutes</span></div>
+      <form id="sim" novalidate>
+        <div class="field-grid">
+          <label>Years to explore <input name="years" type="number" value="20" min="1" max="40" required><small>How far into the future?</small></label>
+          <label>Current savings <span class="unit">₹</span><input name="savings" type="number" value="500000" min="0" step="1000" required><small>Investable corpus today</small></label>
+          <label>Monthly take-home income <span class="unit">₹</span><input name="income" type="number" value="100000" min="0" step="1000" required><small>Income available after tax</small></label>
+          <label>Monthly household expenses <span class="unit">₹</span><input name="expense" type="number" value="50000" min="0" step="500" required><small>Living costs, before goal spending</small></label>
+          <label>Planned monthly SIP <span class="unit">₹</span><input name="sip" type="number" value="25000" min="0" step="500" required><small>Investment target; capped by monthly surplus</small></label>
+          <label>Expected annual return <span class="unit">%</span><input name="ret" type="number" value="11" min="-50" max="40" step="0.5" required><small>Nominal average assumption</small></label>
+          <label>Annual return volatility <span class="unit">%</span><input name="vol" type="number" value="15" min="0" max="80" step="0.5" required><small>How widely returns may vary</small></label>
+          <label>Annual income growth <span class="unit">%</span><input name="income_growth" type="number" value="8" min="-30" max="50" step="0.5" required><small>Also grows the planned SIP</small></label>
+          <label>Unexpected medical cost today <span class="unit">₹</span><input name="medical_shock" type="number" value="400000" min="0" step="10000" required><small>One-off event amount, if enabled</small></label>
+          <label>Scenario seed <input name="seed" type="number" value="20261112" min="0" max="4294967295" step="1" required><small>Reuse a seed to compare like-for-like</small></label>
+        </div>
+        <div class="switch-row"><label class="switch-label"><input name="shocks" type="checkbox" checked><span class="switch-ui"></span><span><strong>Include life disruptions</strong><small>Model job gaps and medical emergencies</small></span></label><div class="switch-detail">Job-loss event: 7% annual chance, 6 months without income · Medical event: 5% annual chance</div></div>
+        <div class="goal-head"><div><p class="eyebrow">02 / WHAT MATTERS TO YOU</p><h2>Your life goals</h2></div><button type="button" id="add" class="button button-quiet">＋ Add a goal</button></div>
+        <p class="section-note">Enter each goal in today's rupees. Hisaab inflates its cost to the year you need it.</p>
+        <div id="goals" class="goals"></div>
+        <div class="life-events panel-inset">
+          <div class="goal-head"><div><p class="eyebrow">03 / YOUR LIFE, YOUR EVENTS</p><h2>What might change?</h2></div><button type="button" id="addEvent" class="button button-quiet">＋ Add life event</button></div>
+          <p class="section-note">Test a recurring income or expense change, or a one-time cost in a future year. Events are applied at the start of the selected year.</p>
+          <div id="events" class="events-list"></div>
+        </div>
+        <div class="run-row"><div><strong>2,000 simulated lives</strong><small>Reuse the seed for repeatable comparisons; change it to explore a different scenario set.</small></div><button type="submit" id="run" class="button button-primary">Run the futures <span>↗</span></button></div>
+      </form>
+      <p id="err" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="out" class="results" hidden aria-live="polite">
+      <div class="section-head"><div><p class="eyebrow">03 / THE MANY-LIVES RESULT</p><h2>Your probability landscape</h2></div><span id="seedLabel" class="step-tag"></span></div>
+      <div class="report-actions"><button type="button" id="pdfReport" class="button button-primary">Download financial report · PDF</button><span class="tiny-note">Includes your inputs, life events, goals, assumptions and simulation results. Telugu reports follow the selected language.</span></div>
+      <div class="result-grid">
+        <article class="result-card result-primary"><p class="eyebrow">ALL GOALS FUNDED</p><div id="score" class="score">—</div><p id="verdict" class="verdict"></p><div class="result-foot"><span id="trialLabel">2,000 trials</span><span>Same scenarios across comparisons</span></div></article>
+        <article class="result-card"><p class="eyebrow">ENDING WEALTH · TODAY'S RUPEE VALUE</p><div id="endingMedian" class="metric">—</div><p class="metric-caption">Median ending corpus</p><div class="range-line"><span>10th percentile</span><strong id="endingLow">—</strong></div><div class="range-line"><span>90th percentile</span><strong id="endingHigh">—</strong></div></article>
+        <article class="result-card"><p class="eyebrow">CORPUS DEPLETION</p><div id="depletion" class="metric">—</div><p class="metric-caption">Share of scenarios ending at zero</p><p class="tiny-note">A goal shortfall can exhaust the corpus in this model.</p></article>
+      </div>
+      <article class="panel chart-panel"><div class="chart-title"><div><h3>How the corpus could evolve</h3><p>10th–90th percentile range, with the median path</p></div><span class="legend"><i></i> Median <i class="legend-band"></i> Middle 80%</span></div><canvas id="fan" width="1000" height="360" role="img" aria-label="Chart of the 10th, 50th and 90th percentile corpus by year"></canvas><p class="tiny-note">Values are nominal rupees. The chart shows the simulated corpus after scheduled goals are paid.</p></article>
+      <article class="panel"><div class="chart-title"><div><h3>Goal survival map</h3><p>Probability each goal is fully funded in its scheduled year</p></div></div><div id="odds" class="odds-list"></div></article>
+      <article id="nudgeCard" class="nudge-card" hidden>
+        <div class="nudge-icon">✳</div>
+        <div>
+          <p class="eyebrow">SCENARIO LAB</p>
+          <h3 id="nudgeTitle">Three-way scenario comparison</h3>
+          <p id="nudgeText">Baseline and two alternatives using the exact same random lives.</p>
+          <div id="compareGrid" class="compare-grid" role="list"></div>
+          <small>Compared with the baseline using the same random scenarios. Scenario results, not personalised advice.</small>
+        </div>
+      </article>
+      <p class="model-note"><strong>Model transparency:</strong> monthly cash-flow checks, category-specific goal inflation (general 6%, education 10%, medical 8%, home 5.5% annual averages), six-month job-loss events and medical shocks. Investment returns use a lognormal monthly approximation calibrated to the stated annual return and volatility. Real markets, taxes, insurance, debt, asset allocation and personal circumstances are more complex.</p>
+    </section>
+
+    <section class="section-head tools-heading"><div><p class="eyebrow">04 / QUICK CHECKS</p><h2>Everyday money maths</h2></div><span class="step-tag">Quick calculators</span></section>
+    <section class="tools">
+      <article class="panel tool-card"><p class="eyebrow">BORROWING</p><h3>Loan EMI</h3><div class="field-grid compact"><label>Loan amount <span class="unit">₹</span><input id="loan" type="number" value="5000000" min="0"></label><label>Annual interest <span class="unit">%</span><input id="rate" type="number" value="8.75" min="0" max="100" step="0.05"></label><label>Tenure <span class="unit">years</span><input id="ly" type="number" value="20" min="0.1" max="40" step="0.1"></label></div><p id="emiOut" class="tool-result">Enter loan details.</p></article>
+      <article class="panel tool-card"><p class="eyebrow">SALARY ESTIMATE</p><h3>Take-home salary</h3><div class="field-grid compact"><label>Annual CTC <span class="unit">₹</span><input id="ctc" type="number" value="1500000" min="0" max="5000000" step="1000"></label><label>Basic pay <span class="unit">%</span><input id="basic" type="number" value="40" min="0" max="100"></label><label>Professional tax / month <span class="unit">₹</span><input id="pt" type="number" value="200" min="0" max="5000"></label></div><p id="taxOut" class="tool-result">Enter salary details.</p><small class="tiny-note">Illustrative Tax Year 2026–27 new-regime estimate for CTC up to ₹50 lakh. Assumes a resident individual eligible for Section 87A, PF at 12% of basic, ₹75,000 standard deduction and editable professional tax. Actual payroll, exemptions and eligibility can differ.</small></article>
+    </section>
+  </main>
+  
+    <section class="panel" id="officialPanel">
+      <div class="section-head"><div><p class="eyebrow" data-i18n="eyebrow_data">05 / OFFICIAL CONTEXT</p><h2 data-i18n="h2_data">Verified financial context</h2></div><span class="step-tag" data-i18n="tag_data">Source-dated</span></div>
+      <div id="dataCards" class="data-cards"></div>
+      <p class="tiny-note" data-i18n="data_note">Snapshots show source, effective date and last verified date. Confirm on official sites before decisions.</p>
+    </section>
+
+    <section class="panel" id="mitraPanel">
+      <div class="section-head"><div><p class="eyebrow" data-i18n="eyebrow_mitra">06 / HISAAB MITRA</p><h2 data-i18n="h2_mitra">Your bilingual financial guide</h2></div><span class="step-tag">EN · తెలుగు</span></div>
+      <p class="lede-small" data-i18n="mitra_lede">Mitra explains verified tax rules and your Hisaab calculations. It does not invent rates or give personalised investment advice.</p>
+      <div class="mitra-suggestions" id="mitraSuggestions"></div>
+      <div class="mitra-chat" id="mitraChat" aria-live="polite"></div>
+      <form id="mitraForm" class="mitra-form">
+        <label class="sr-only" for="mitraInput" data-i18n="mitra_label">Ask Mitra</label>
+        <input id="mitraInput" name="q" maxlength="500" placeholder="Ask about tax, SIP, goals…" autocomplete="off">
+        <button type="submit" class="button button-primary" data-i18n="mitra_send">Ask Mitra</button>
+      </form>
+    </section>
+
+    <section class="panel" id="whyPanel">
+      <div class="section-head"><div><p class="eyebrow" data-i18n="eyebrow_why">07 / WHY THIS NUMBER?</p><h2 data-i18n="h2_why">Transparent calculation breakdown</h2></div></div>
+      <div id="whyBody" class="why-body">
+        <p data-i18n="why_empty">Run a simulation or tax estimate to see formulas, inputs, assumptions and sources here.</p>
+      </div>
+    </section>
+
+  <footer><span>हिसाब · HISAAB</span><span>Built to make uncertainty visible.</span><span>Production financial digital twin · Not personalised investment advice</span></footer>
+</div>
+<script src="app.js" defer></script>
+</body></html>

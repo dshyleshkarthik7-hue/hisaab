@@ -1,0 +1,89 @@
+import copy
+import sys
+import unittest
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "python"))
+import engine
+
+BASE = {
+    "years": 5, "savings": 1_000_000, "income": 100_000, "sip": 20_000,
+    "expense": 40_000, "ret": 8, "vol": 10, "income_growth": 5,
+    "medical_shock": 100_000, "shocks": False, "seed": 42, "trials": 300,
+    "goals": [{"name": "Education", "at": 4, "cost": 500_000, "kind": "general", "flex": False}],
+}
+
+class EngineTests(unittest.TestCase):
+    def test_reproducible_seed(self):
+        self.assertEqual(engine.simulate(BASE), engine.simulate(BASE))
+
+    def test_different_seed_changes_distribution(self):
+        a = engine.simulate(BASE)
+        b = engine.simulate({**BASE, "seed": 43})
+        self.assertNotEqual(a["fan"], b["fan"])
+
+    def test_expense_shortfall_reduces_corpus(self):
+        low = engine.simulate(BASE)
+        high = engine.simulate({**BASE, "income": 10_000, "expense": 100_000})
+        self.assertLess(high["ending"]["p50"], low["ending"]["p50"])
+
+    def test_sip_is_capped_by_surplus(self):
+        surplus_sip = engine.simulate({**BASE, "sip": 100_000})
+        huge_sip = engine.simulate({**BASE, "sip": 1_000_000})
+        # Both are capped by the same monthly surplus (income minus expenses).
+        self.assertEqual(surplus_sip["fan"], huge_sip["fan"])
+
+    def test_shock_path_runs_and_is_reproducible(self):
+        stressed = {**BASE, "years": 12, "shocks": True, "medical_shock": 250_000, "seed": 7}
+        first = engine.simulate(stressed, trials=500)
+        second = engine.simulate(stressed, trials=500)
+        self.assertEqual(first, second)
+        self.assertTrue(0 <= first["depletion_odds"] <= 1)
+
+    def test_goal_success_probability_is_bounded(self):
+        result = engine.simulate(BASE)
+        self.assertTrue(0 <= result["score"] <= 1)
+        self.assertTrue(0 <= result["goals"][0]["odds"] <= 1)
+        self.assertEqual(len(result["fan"]), BASE["years"] + 1)
+
+    def test_validation_rejects_invalid_goal_year(self):
+        bad = copy.deepcopy(BASE); bad["goals"][0]["at"] = 8
+        with self.assertRaises(engine.InputError): engine.validate(bad)
+
+    def test_validation_rejects_fractional_years(self):
+        bad = {**BASE, "years": 2.5}
+        with self.assertRaises(engine.InputError): engine.validate(bad)
+
+    def test_validation_rejects_non_finite_values(self):
+        bad = {**BASE, "ret": float("nan")}
+        with self.assertRaises(engine.InputError): engine.validate(bad)
+
+    def test_life_event_validation(self):
+        event_case = {**BASE, "events": [{"label": "New job", "year": 2, "kind": "income_change", "amount": 20000}]}
+        result = engine.simulate(event_case, trials=300)
+        self.assertEqual(result["assumptions"]["life_events"], event_case["events"])
+        bad = {**BASE, "events": [{"year": 9, "kind": "income_change", "amount": 20000}]}
+        with self.assertRaises(engine.InputError):
+            engine.validate(bad)
+
+    def test_goal_cost_inflation_categories_differ(self):
+        # At a fixed seed and horizon, medical inflation should produce a higher goal cost path.
+        education = engine.simulate(BASE)
+        medical_goal = copy.deepcopy(BASE); medical_goal["goals"][0]["kind"] = "medical"
+        medical = engine.simulate(medical_goal)
+        self.assertLessEqual(medical["goals"][0]["odds"], education["goals"][0]["odds"])
+
+
+    def test_three_way_comparison_shape(self):
+        base = engine.simulate(BASE, trials=300)
+        payload = engine.nudge(BASE, base)
+        self.assertIn("scenarios", payload)
+        self.assertEqual(len(payload["scenarios"]), 3)
+        labels = [s["label"] for s in payload["scenarios"]]
+        self.assertEqual(labels[0], "Baseline")
+        for s in payload["scenarios"]:
+            self.assertTrue(0 <= s["score"] <= 1)
+            self.assertIn("ending_median", s)
+            self.assertIn("depletion_odds", s)
+
+if __name__ == "__main__":
+    unittest.main()
