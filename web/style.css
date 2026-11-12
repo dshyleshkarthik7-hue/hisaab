@@ -34,3 +34,6 @@
 
 .persona-presets{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 18px}
 .persona-presets .section-note{flex-basis:100%;margin:0}
+
+.persona-presets{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 18px}
+.persona-presets .section-note{flex-basis:100%;margin:0}
