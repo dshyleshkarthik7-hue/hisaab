@@ -432,11 +432,7 @@ async function askMitra(question: string): Promise<void> {
   if (!q) return;
   appendMitraBubble("user", q);
   try {
-    const ctx: any = {};
-    if (lastResult) {
-      ctx.inputs=lastInput; ctx.simulation={score:lastResult.score,depletion_odds:lastResult.depletion_odds,diagnostics:lastResult.diagnostics,shock_counterfactuals:lastResult.nudge&&lastResult.nudge.shock_counterfactuals,target_sip:lastResult.nudge&&lastResult.nudge.target_sip};
-    }
-    const data = { reply: answerMitra(q, language, lastResult ? {score:lastResult.score,depletion_odds:lastResult.depletion_odds} : undefined), sources: [], calculations: null };
+    const data = { reply: answerMitra(q, language, lastResult ? {score:lastResult.score,depletion_odds:lastResult.depletion_odds,goals:lastResult.goals,diagnostics:lastResult.diagnostics,nudge:lastResult.nudge??undefined} : undefined), sources: [], calculations: null };
     appendMitraBubble("mitra", data.reply, data.sources);
   } catch (e) {
     appendMitraBubble("mitra", language === "te"
