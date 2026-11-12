@@ -477,7 +477,6 @@ async function askMitra(question) {
     if (typeof lastResult !== "undefined" && lastResult) {
       ctx.inputs = lastInput;
       ctx.simulation = { score: lastResult.score, depletion_odds: lastResult.depletion_odds, diagnostics: lastResult.diagnostics, target_sip: lastResult.nudge && lastResult.nudge.target_sip };
-      ctx.inputs = lastInput;
     }
     const res = await fetch("/api/mitra", {
       method: "POST",
