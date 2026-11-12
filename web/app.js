@@ -424,7 +424,7 @@ const i18nExtra = {
   "No live rate feed is connected. Values are deliberately not shown as current; verify directly with the linked official source.": "ప్రత్యక్ష రేట్ల ఫీడ్ లేదు. ప్రస్తుత రేట్లుగా విలువలు చూపబడవు; అధికారిక మూలంలో నేరుగా నిర్ధారించండి.",
   "06 / HISAAB MITRA": "06 / హిసాబ్ మిత్ర",
   "Your bilingual financial guide": "మీ ద్విభాషా ఆర్థిక మార్గదర్శి",
-  "Mitra explains verified tax rules and your Hisaab calculations. It does not invent rates or give personalised investment advice.": "మిత్ర ధృవీకరించిన పన్ను నియమాలు మరియు Hisaab లెక్కలను వివరిస్తుంది. రేట్లు కల్పించదు; వ్యక్తిగతీకరించిన పెట్టుబడి సలహా ఇవ్వదు.",
+  "Mitra explains Hisaab's illustrative calculations and links to official rules. It does not invent rates or give personalised investment advice.": "మిత్ర Hisaab ఉదాహరణాత్మక లెక్కలు మరియు అధికారిక నియమాల లింకులను వివరిస్తుంది. రేట్లు కల్పించదు; వ్యక్తిగతీకరించిన పెట్టుబడి సలహా ఇవ్వదు.",
   "Ask Mitra": "మిత్రను అడగండి",
   "07 / WHY THIS NUMBER?": "07 / ఈ సంఖ్య ఎందుకు?",
   "Transparent calculation breakdown": "పారదర్శక లెక్క వివరణ",
