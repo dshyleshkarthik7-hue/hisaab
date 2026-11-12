@@ -332,10 +332,10 @@ translateStatic();
 // ——— Production: official data, Mitra, Why This Number, complete i18n ———
 const i18nExtra: Record<string, string> = {
   "05 / OFFICIAL CONTEXT": "05 / అధికారిక సందర్భం",
-  "Verified financial context": "ధృవీకరించిన ఆర్థిక సందర్భం",
-  "Source-dated": "మూలం + తేదీ",
-  "Snapshots show source, effective date and last verified date. Confirm on official sites before decisions.":
-    "స్నాప్‌షాట్‌లు మూలం, అమలు తేదీ, ధృవీకరణ తేదీని చూపుతాయి. నిర్ణయాలకు ముందు అధికారిక సైట్‌లలో నిర్ధారించండి.",
+  "Reference links — not live data": "సూచన లింకులు — ప్రత్యక్ష డేటా కాదు",
+  "Official links": "అధికారిక లింకులు",
+  "No live rate feed is connected. Values are deliberately not shown as current; verify directly with the linked official source.":
+    "ప్రత్యక్ష రేట్ల ఫీడ్ లేదు. ప్రస్తుత రేట్లుగా విలువలు చూపబడవు; అధికారిక మూలంలో నేరుగా నిర్ధారించండి.",
   "06 / HISAAB MITRA": "06 / హిసాబ్ మిత్ర",
   "Your bilingual financial guide": "మీ ద్విభాషా ఆర్థిక మార్గదర్శి",
   "Mitra explains verified tax rules and your Hisaab calculations. It does not invent rates or give personalised investment advice.":
@@ -472,8 +472,8 @@ async function loadOfficialData(): Promise<void> {
       card.append(el("div", "data-value", item.value));
       card.append(el("p", "tiny-note",
         `${language === "te" ? "మూలం" : "Source"}: ${item.source} · ` +
-        `${language === "te" ? "అమలు" : "Effective"}: ${item.effective_from} · ` +
-        `${language === "te" ? "ధృవీకరణ" : "Verified"}: ${item.verified_on}`));
+        `${language === "te" ? "ప్రత్యక్ష ధృవీకరణ లేదు" : "Not live-verified"}`));
+      if (item.notes) card.append(el("p", "tiny-note", item.notes));
       box.append(card);
     });
   } catch {
