@@ -371,7 +371,7 @@ $("pdfReport").addEventListener("click", async (ev) => {
   blocks.push({type:"paragraph",text:te?"ఈ నివేదిక మీ ఇన్‌పుట్‌లు మరియు నమూనా అంచనాలపై ఆధారపడుతుంది. వాస్తవ మార్కెట్ రాబడులు, పన్నులు, ఫీజులు, బీమా, అప్పులు మరియు వ్యక్తిగత పరిస్థితులు భిన్నంగా ఉండవచ్చు. Hisaab వ్యక్తిగత పెట్టుబడి లేదా పన్ను సలహా కాదు. ముఖ్య నిర్ణయాలకు అర్హత కలిగిన స్వతంత్ర నిపుణుడిని సంప్రదించండి.":"This report depends on your inputs and documented model assumptions. Actual market returns, taxes, fees, insurance, debt and personal circumstances can differ. Hisaab does not provide personalised investment or tax advice. Consult a qualified independent professional for material decisions."});
   blocks.push({type:"paragraph",text:labels.generated+": "+new Date().toISOString()});
   try{
-    registerFonts({te:()=>import("pdfnative/fonts/noto-telugu-data.js"),en:()=>import("pdfnative/fonts/noto-sans-data.js")});
+    registerFonts({te:()=>import("pdfnative/fonts/noto-telugu-data.js") as any,en:()=>import("pdfnative/fonts/noto-sans-data.js") as any});
     const [teluguFont,latinFont]=await Promise.all([loadFontData("te"),loadFontData("en")]);
     if(!teluguFont)throw new Error("Telugu font data could not be loaded");
     const fontEntries:any[]=[{fontData:teluguFont,fontRef:"/F3",lang:"te"}];
