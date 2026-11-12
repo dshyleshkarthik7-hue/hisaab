@@ -32,6 +32,7 @@
       <form id="sim" novalidate>
         <div class="field-grid">
           <label>Years to explore <input name="years" type="number" value="20" min="1" max="40" required><small>How far into the future?</small></label>
+          <label>Simulation trials <input name="trials" type="number" value="2000" min="100" max="10000" step="100" required><small>100–10,000 independent paths; more trials take longer</small></label>
           <label>Current savings <span class="unit">₹</span><input name="savings" type="number" value="500000" min="0" step="1000" required><small>Investable corpus today</small></label>
           <label>Monthly take-home income <span class="unit">₹</span><input name="income" type="number" value="100000" min="0" step="1000" required><small>Income available after tax</small></label>
           <label>Monthly household expenses <span class="unit">₹</span><input name="expense" type="number" value="50000" min="0" step="500" required><small>Living costs, before goal spending</small></label>
@@ -51,7 +52,7 @@
           <p class="section-note">Test a recurring income or expense change, or a one-time cost in a future year. Events are applied at the start of the selected year.</p>
           <div id="events" class="events-list"></div>
         </div>
-        <div class="run-row"><div><strong>2,000 simulated lives</strong><small>Reuse the seed for repeatable comparisons; change it to explore a different scenario set.</small></div><button type="submit" id="run" class="button button-primary">Run the futures <span>↗</span></button></div>
+        <div class="run-row"><div><strong id="trialCount">2,000 simulated lives</strong><small>Reuse the seed for repeatable comparisons; change it to explore a different scenario set.</small></div><button type="submit" id="run" class="button button-primary">Run the futures <span>↗</span></button></div>
       </form>
       <p id="err" class="error" role="alert" hidden></p>
     </section>
