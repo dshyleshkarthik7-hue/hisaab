@@ -430,16 +430,6 @@ async function askMitra(question: string): Promise<void> {
     }
     const data = { reply: answerMitra(q, language, lastResult ? {score:lastResult.score,depletion_odds:lastResult.depletion_odds} : undefined), sources: [], calculations: null };
     appendMitraBubble("mitra", data.reply, data.sources);
-    if (data.calculations) {
-      showWhy({
-        title: language === "te" ? "మిత్ర లెక్క / నియమాలు" : "Mitra calculation / rules",
-        formula: "Hisaab Tax Intelligence + verified rule packs (not model-invented)",
-        inputs: { question: q },
-        assumptions: data.disclaimer,
-        sources: (data.sources || []).map((s: any) => s.name + " — " + s.url),
-        breakdown: data.calculations,
-      });
-    }
   } catch (e) {
     appendMitraBubble("mitra", language === "te"
       ? "క్షమించండి, ప్రస్తుతం సమాధానం ఇవ్వలేకపోయాను. మళ్లీ ప్రయత్నించండి."
