@@ -153,11 +153,11 @@ function show(r: Result): void {
 $("sim").addEventListener("submit", async event => {
   event.preventDefault();
   const form = $("sim") as HTMLFormElement, data = new FormData(form), num = (key: string) => Number(data.get(key));
-  const goals = readGoals(), years = num("years");
+  const goals = readGoals(), events = readEvents(), years = num("years");
   const error = $("err"), button = $("run") as HTMLButtonElement;
-  const invalid = !Number.isInteger(num("trials")) || num("trials") < 100 || num("trials") > 10000 || goals.length < 1 || goals.length > 12 || goals.some(g => !g.name || !Number.isInteger(g.at) || g.at < 1 || g.at > years || !Number.isFinite(g.cost) || g.cost <= 0);
-  if (invalid) { error.textContent = "Add 1–12 valid goals. Each needs a name, positive cost and target year within your simulation."; error.hidden = false; return; }
-  const body = { years, trials:num("trials"), savings: num("savings"), income: num("income"), sip: num("sip"), expense: num("expense"), ret: num("ret"), vol: num("vol"), income_growth: num("income_growth"), medical_shock: num("medical_shock"), seed: num("seed"), shocks: data.has("shocks"), goals, events: readEvents() };
+  const invalid = !Number.isInteger(num("trials")) || num("trials") < 100 || num("trials") > 10000 || goals.length < 1 || goals.length > 12 || goals.some(g => !g.name || !Number.isInteger(g.at) || g.at < 1 || g.at > years || !Number.isFinite(g.cost) || g.cost <= 0) || events.some(e => !e.label || !Number.isInteger(e.year) || e.year < 1 || e.year > years || !Number.isFinite(e.amount) || e.amount <= 0);
+  if (invalid) { error.textContent = "Check the trial count, goal years/costs, and life-event years/amounts. All must be valid and within your simulation horizon."; error.hidden = false; return; }
+  const body = { years, trials:num("trials"), savings: num("savings"), income: num("income"), sip: num("sip"), expense: num("expense"), ret: num("ret"), vol: num("vol"), income_growth: num("income_growth"), medical_shock: num("medical_shock"), seed: num("seed"), shocks: data.has("shocks"), goals, events };
   button.disabled = true; button.textContent = "Simulating possible lives…"; error.hidden = true; $("trialCount").textContent = num("trials").toLocaleString("en-IN")+" simulated lives";
   const cancel = el("button", "button button-quiet", "Cancel simulation"); cancel.type = "button"; cancel.id = "cancelSimulation"; button.parentElement?.append(cancel);
   cancel.addEventListener("click", () => { cancelActiveSimulation?.(); cancelActiveSimulation = null; workerRunId++; cancel.remove(); button.disabled = false; button.textContent = "Run the futures ↗"; error.textContent = "Simulation cancelled."; error.hidden = false; });
