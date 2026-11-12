@@ -28,6 +28,8 @@ public final class Hisaab {
   private static final int ENGINE_PORT = Integer.parseInt(
       System.getenv().getOrDefault("HISAAB_ENGINE_PORT", "8081"));
   private static final String BIND = System.getenv().getOrDefault("HISAAB_BIND", "0.0.0.0");
+  private static final boolean TRUST_PROXY_HEADERS =
+      Boolean.parseBoolean(System.getenv().getOrDefault("HISAAB_TRUST_PROXY_HEADERS", "false"));
   // Set to 0 only behind a trusted edge proxy that enforces per-client rate limits.
   private static final int RATE_LIMIT_PER_MIN = Integer.parseInt(
       System.getenv().getOrDefault("HISAAB_RATE_LIMIT", "60"));
@@ -77,6 +79,15 @@ public final class Hisaab {
 
   private static String clientIp(HttpExchange x) {
     // Do not trust caller-controlled X-Forwarded-For; edge proxies should rate-limit upstream.
+    if (TRUST_PROXY_HEADERS) {
+      // Only enable behind a proxy that overwrites/appends X-Forwarded-For.
+      String forwarded = x.getRequestHeaders().getFirst("X-Forwarded-For");
+      if (forwarded != null && !forwarded.isBlank()) {
+        String[] hops = forwarded.split(",");
+        String candidate = hops[hops.length - 1].trim();
+        if (candidate.matches("[0-9a-fA-F:.]{3,64}")) return candidate;
+      }
+    }
     InetSocketAddress addr = x.getRemoteAddress();
     return addr == null || addr.getAddress() == null ? "unknown" : addr.getAddress().getHostAddress();
   }
@@ -435,7 +446,8 @@ public final class Hisaab {
   }
 
   public static void main(String[] args) throws Exception {
-    int httpPort = Integer.parseInt(System.getenv().getOrDefault("HISAAB_HTTP_PORT", "8080"));
+    int httpPort = Integer.parseInt(System.getenv().getOrDefault(
+        "HISAAB_HTTP_PORT", System.getenv().getOrDefault("PORT", "8080")));
     InetSocketAddress addr = new InetSocketAddress(BIND, httpPort);
     HttpServer server = HttpServer.create(addr, 128);
     server.createContext("/api/emi", wrap(Hisaab::emi));
