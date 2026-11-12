@@ -9,11 +9,15 @@ command -v java >/dev/null || { echo "Java 17+ is required" >&2; exit 1; }
 python3 --version
 java -version 2>&1 | head -n 1
 
+if command -v tsc >/dev/null; then
+  tsc -p web
+else
+  echo "TypeScript compiler not found; using committed web/app.js artifact." >&2
+fi
 if [[ ! -f web/app.js ]]; then
-  echo "Prebuilt web/app.js is required." >&2
+  echo "web/app.js is required." >&2
   exit 1
 fi
-echo "Using prebuilt web/app.js (deployment artifact)."
 
 export HISAAB_HTTP_PORT="${HISAAB_HTTP_PORT:-8080}"
 export HISAAB_ENGINE_PORT="${HISAAB_ENGINE_PORT:-8081}"
