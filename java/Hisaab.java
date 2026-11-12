@@ -155,7 +155,7 @@ public final class Hisaab {
     if (!x.getRequestMethod().equals("GET")) { method(x, "GET"); return; }
     try {
       Map<String, Double> m = query(x.getRequestURI().getRawQuery());
-      double ctc = required(m, "ctc", 0, 5e7);
+      double ctc = required(m, "ctc", 0, 5e6);
       double basicPct = required(m, "basic", 0, 100);
       double pt = required(m, "pt", 0, 50000);
       double basic = ctc * basicPct / 100.0;
