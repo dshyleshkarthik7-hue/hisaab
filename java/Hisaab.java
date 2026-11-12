@@ -106,11 +106,17 @@ public final class Hisaab {
     return slot[1] <= RATE_LIMIT_PER_MIN;
   }
 
+  private static String logSafe(String value) {
+    if (value == null) return "";
+    return value.replace("\\", "\\\\").replace("\"", "\\\"")
+        .replace("\r", " ").replace("\n", " ").replace("\t", " ");
+  }
+
   private static void log(String level, long id, String method, String path, int status, long ms, String detail) {
     // Do not persist client IP addresses in application logs.
     System.out.printf(Locale.ROOT,
         "{\"ts\":\"%s\",\"level\":\"%s\",\"req\":%d,\"method\":\"%s\",\"path\":\"%s\",\"status\":%d,\"ms\":%d,\"msg\":\"%s\"}%n",
-        Instant.now(), level, id, method, path, status, ms, detail == null ? "" : detail.replace("\"", "'"));
+        Instant.now(), level, id, logSafe(method), logSafe(path), status, ms, logSafe(detail));
   }
 
   private static Map<String, Double> query(String raw) {
