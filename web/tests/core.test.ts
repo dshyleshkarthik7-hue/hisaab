@@ -1,0 +1,15 @@
+import { calculateEmi } from "../src/core/emi.js";
+import { computeTax, estimateSalary } from "../src/core/tax.js";
+import { simulate } from "../src/core/simulation.js";
+import { createRandomStreams } from "../src/core/random.js";
+const assert=(ok:boolean,message:string)=>{if(!ok)throw new Error(message);};
+assert(Math.abs(calculateEmi(100000,0,1).emi-100000/12)<.001,"zero-rate EMI");
+assert(calculateEmi(100000,10,1).interest>0,"interest positive");
+assert(computeTax(1200000).totalTax===0,"87A rebate threshold");
+assert(computeTax(1300000).totalTax>0,"tax above rebate threshold");
+assert(estimateSalary(1500000,40,200).inhand>0,"salary estimate");
+const input={years:2,savings:500000,income:100000,sip:20000,expense:50000,ret:8,vol:12,income_growth:5,medical_shock:100000,seed:42,shocks:true,trials:100,goals:[{name:"Goal",at:2,cost:100000,kind:"general" as const,flex:true}]};
+const a=simulate(input),b=simulate(input);
+assert(JSON.stringify(a)===JSON.stringify(b),"seed reproducibility");
+const r=createRandomStreams(9);assert(r.market()===createRandomStreams(9).market(),"random stream reproducibility");
+console.log("Core tests passed");
