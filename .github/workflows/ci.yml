@@ -28,6 +28,8 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Python syntax checks
         run: python -m compileall -q python tests
+      - name: TypeScript source check
+        run: npx --yes --package typescript@5.7.3 tsc --noEmit -p web
       - name: Java compile
         run: javac java/Hisaab.java
       - name: Browser JavaScript syntax
