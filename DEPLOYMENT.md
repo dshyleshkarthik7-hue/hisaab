@@ -129,7 +129,7 @@ No Cloudflare credentials are stored in this repository. No production deploymen
 
 ### PDF behavior
 
-The browser-only build generates and downloads an A4 PDF directly with PDFMake. It embeds the bundled Hind Guntur regular and bold fonts through same-origin font URLs and includes simulation summary, inputs, goals, scenario comparisons, target-SIP analysis, paired shock counterfactuals and annual corpus bands. CI checks Telugu glyph coverage in both font files. Verify glyph shaping, page breaks and selectable text on supported browsers before production sign-off.
+The browser-only build generates and downloads an A4 PDF directly with pdfnative. It bundles Noto Telugu and Noto Sans font data, uses the Telugu OpenType shaper, and includes simulation summary, inputs, goals, scenario comparisons, target-SIP analysis, paired shock counterfactuals and annual corpus bands. The Chromium smoke test generates a Telugu-language report and verifies its extracted Unicode text. Check page breaks and visual shaping on supported physical devices before production sign-off.
 
 ### Static-build scope
 
