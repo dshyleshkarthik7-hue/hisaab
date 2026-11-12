@@ -33,7 +33,7 @@ jobs:
         working-directory: web
         run: npm run build
       - name: Browser JavaScript syntax
-        run: node --check web/app.js
+        run: node --check web/app.bundle.js
       - name: Core deterministic and calculator tests
         run: npx --yes --package tsx@4.19.2 tsx web/tests/core.test.ts
       - name: Python-to-browser engine parity
@@ -41,7 +41,7 @@ jobs:
       - name: 10,000-trial 40-year baseline benchmark
         run: npx --yes --package tsx@4.19.2 tsx web/tests/benchmark.test.ts
       - name: Static artifact checks
-        run: test -s web/index.html && test -s web/app.js && test -s web/src/workers/simulation.worker.js
+        run: test -s web/index.html && test -s web/app.bundle.js && test -s web/src/workers/simulation.worker.bundle.js
       - name: No backend API dependencies in browser entrypoint
         run: '! grep -nE "fetch\\([^)]*/api/|/api/(simulate|emi|tax|salary|mitra|report)" web/app.ts'
       - name: Cloudflare Pages configuration
