@@ -365,6 +365,20 @@ $("pdfReport").addEventListener("click", async (ev) => {
   const goalsBody:any[][]=[[labels.goal,labels.year,labels.cost,labels.odds]];
   input.goals.forEach((g:any,i:number)=>goalsBody.push([g.name,String(result.goals[i]?.at??g.at),fmt(g.cost),pct(result.goals[i]?.odds??0)]));
   content.push({text:labels.goals,style:"section"},table(goalsBody,["*","auto","auto","auto"]));
+  if(result.nudge?.scenarios?.length){
+    content.push({text:te?"సన్నివేశాల ప్రయోగశాల":"Scenario Lab",style:"section"});
+    content.push(table([[te?"సన్నివేశం":"Scenario",te?"విజయం":"Success",te?"మధ్యస్థ నిధి":"Median corpus",te?"ఖాళీ":"Depletion"],...result.nudge.scenarios.map((x:any)=>[x.label,pct(x.score),fmt(x.ending_median),pct(x.depletion_odds)])],["*","auto","auto","auto"]));
+  }
+  if(result.nudge?.target_sip){
+    const target=result.nudge.target_sip;
+    content.push({text:te?"85% లక్ష్య SIP విశ్లేషణ":"85% target-SIP analysis",style:"section"});
+    content.push({text:(te?"అంచనా నెలవారీ SIP: ":"Estimated monthly SIP: ")+fmt(target.monthly_sip)+" · "+(te?"అదనపు మొత్తం: ":"Additional amount: ")+fmt(target.additional_monthly_sip)+" · "+(target.reachable?(te?"సాధ్యం":"Reachable"):(te?"పరిమితిలో సాధ్యం కాలేదు":"Not reached within modelled income ceiling"))});
+  }
+  if(result.nudge?.shock_counterfactuals){
+    const rows:any[][]=[[te?"షాక్ రకం":"Shock",te?"నివారించిన వైఫల్యాలు":"Failures prevented",te?"కొత్త వైఫల్యాలు":"New failures",te?"నికర మార్పు":"Net change"]];
+    Object.entries(result.nudge.shock_counterfactuals).forEach(([name,value]:[string,any])=>rows.push([name,String(value.failures_prevented_if_removed),String(value.new_failures_in_counterfactual),String(value.net_failure_reduction)]));
+    content.push({text:te?"జత చేసిన షాక్ ప్రతికల్పనలు":"Paired shock counterfactuals",style:"section"},table(rows,["*","auto","auto","auto"]));
+  }
   if(input.events?.length){
     const rows:any[][]=[[labels.events,labels.year,te?"రకం":"Type",labels.cost]];
     input.events.forEach((e:any)=>rows.push([e.label,String(e.year),e.kind,fmt(e.amount)]));
