@@ -6,15 +6,12 @@ job-loss and medical-event assumptions, and SIP surplus cap.
 
 ## Tax Intelligence
 - Rules are versioned by tax year and regime (`python/tax_engine.py`).
-- Each pack records source, effective date, verified date, and status.
+- Each pack records source, effective date, verification metadata and status. The current calculator status is `illustrative`, not certified for filing.
 - Ingestion candidates from official sites **never** alter live rules until approved
   and explicitly mapped by a human operator.
 
 ## Data provenance
-Every official snapshot in `data_service` includes:
-- source name + URL
-- effective_from
-- verified_on
+`data_service` contains source links only; it does not assert current rates or populate a `verified_on` date until a live source is independently checked.
 - update cadence
 
 ## Limitations (must remain visible to users)
