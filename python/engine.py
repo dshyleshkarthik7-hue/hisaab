@@ -184,8 +184,10 @@ def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=
         worst_survivor=min(survivors,key=lambda i:all_samples[i]["ending"]) if survivors else None
         mid=ordered[len(ordered)//2]
         special={i for i in (worst_survivor,mid) if i is not None}
-        shock=next((i for i,x in enumerate(all_samples) if x["shocked"] and i not in special),next((i for i,x in enumerate(all_samples) if x["shocked"]),ordered[0]))
-        special.add(shock)
+        stress=next((i for i,x in enumerate(all_samples) if (x["shocked"] or not x["ok"] or x["ending"]<=.01) and i not in special),None)
+        if stress is None:
+            stress=next((i for i,x in enumerate(all_samples) if x["shocked"] or not x["ok"] or x["ending"]<=.01),None)
+        if stress is not None: special.add(stress)
         quantiles={ordered[round(k*(len(ordered)-1)/23)] for k in range(24)}
         chosen=special | quantiles
         while len(chosen)>24:
@@ -198,7 +200,7 @@ def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=
                 if len(chosen)==24: break
         samples=[all_samples[i] for i in sorted(chosen)]
         for x in samples:
-            x["label"]="worst_surviving" if worst_survivor is not None and x is all_samples[worst_survivor] else "median" if x is all_samples[mid] else "depleted_or_shocked" if x is all_samples[shock] else "sample"
+            x["label"]="worst_surviving" if worst_survivor is not None and x is all_samples[worst_survivor] else "median" if x is all_samples[mid] else "depleted_or_shocked" if stress is not None and x is all_samples[stress] else "sample"
             del x["ending"]
     failed=max(1,n-all_hits)
     weakest=min(({"name":g["name"],"odds":hits[i]/n} for i,g in enumerate(goals)),key=lambda x:x["odds"])
