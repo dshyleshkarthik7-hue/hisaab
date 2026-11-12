@@ -19,7 +19,7 @@ Install Python dependencies with `python3 -m pip install -r requirements.txt` an
 
 1. **Financial Digital Twin** — monthly Monte Carlo scenario engine  
 2. **Tax Intelligence** — versioned Indian tax rules (new/old regime)  
-3. **Financial data service** — source-dated official reference snapshots  
+3. **Financial reference directory** — official source links; no live rate feed or current rate claims  
 4. **Hisaab Mitra** — bilingual grounded explainer (EN / తెలుగు)  
 5. **Why This Number?** — transparent calculation breakdowns  
 6. **Report generator** — bilingual print/PDF financial reports  
@@ -62,6 +62,6 @@ The tests cover input validation, deterministic reproducibility, expense/income 
 
 ## Deployment
 
-A Docker container definition and Render blueprint are included. The runtime uses Java 21, Python 3.11+, ReportLab for PDF generation, and a Node 22 build stage for the TypeScript frontend. Set `HISAAB_HTTP_PORT` and `HISAAB_ENGINE_PORT` only when required by your platform. Do not expose the internal Python engine port publicly.
+A Docker image and Render Blueprint are included. The image compiles the TypeScript frontend, installs ReportLab in a Python virtual environment, bundles the required Telugu fonts, and runs application services as an unprivileged user. Render's Blueprint uses a persistent disk and one instance; see the deployment guide for its scaling and deploy-downtime trade-offs.
 
-This package has not been independently security-reviewed or production-certified. Run the automated checks and complete deployment-specific hardening before public use. Standard production controls remain your responsibility at the edge: managed TLS, WAF/rate limiting, uptime monitoring, and periodic review of the illustrative Tax Year 2026–27 salary estimator against current official rules. The application stores no user financial data.
+This package is not independently security-reviewed, tax-certified or approved for regulated financial advice. See [DEPLOYMENT.md](DEPLOYMENT.md) for the Render Blueprint, secret handling, persistent storage, health checks and go-live acceptance gates. The app does not store simulation inputs in a customer database; optional ingestion candidates are stored on the configured data volume. External LLM processing is disabled unless explicitly enabled.
