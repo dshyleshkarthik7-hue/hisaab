@@ -119,10 +119,11 @@ Open `http://localhost:8788`. The CI pipeline runs the Python reference suite, c
 ### Deploy after the migration is approved and merged
 
 1. Create a Cloudflare Pages project named `hisaab` and connect the repository, or use the manual workflow below.
-2. In GitHub repository settings, configure the protected `production` environment with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Use a scoped token with Cloudflare Pages deployment permissions.
-3. Merge the migration only after financial-model, tax and browser/PDF acceptance reviews are complete.
-4. On the `main` branch, run **Actions → Deploy Hisaab to Cloudflare Pages → Run workflow**. The workflow is intentionally manual and refuses to deploy from a non-main branch.
-5. Verify the generated `https://hisaab.pages.dev` URL, then attach the intended custom domain in Cloudflare Pages → Custom domains. Confirm the zone is active in the same Cloudflare account and follow Cloudflare's DNS instructions; do not guess or overwrite existing DNS records.
+2. In GitHub repository settings, configure the `preview` and `production` environments with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Use a scoped token with Cloudflare Pages deployment permissions.
+3. From the migration branch, run **Actions → Deploy Hisaab preview to Cloudflare Pages → Run workflow**. This creates a branch preview at `migration-cloudflare-full-static.hisaab.pages.dev` if the Pages project exists.
+4. Review the preview, including simulation, PDF download and mobile layout. Merge the migration only after financial-model, tax and browser/PDF acceptance reviews are complete.
+5. On the `main` branch, run **Actions → Deploy Hisaab to Cloudflare Pages → Run workflow**. The workflow is intentionally manual and refuses to deploy from a non-main branch.
+6. Verify the generated `https://hisaab.pages.dev` URL, then attach the intended custom domain in Cloudflare Pages → Custom domains. Confirm the zone is active in the same Cloudflare account and follow Cloudflare's DNS instructions; do not guess or overwrite existing DNS records.
 
 No Cloudflare credentials are stored in this repository. No production deployment or DNS modification has been performed from this migration branch.
 
