@@ -4,7 +4,7 @@ Hisaab is a household-finance scenario simulator. Instead of a single determinis
 
 ## Run locally
 
-Requirements: Python 3.9+, Java 17+, Node.js/npm (for the TypeScript build), and the Python packages listed in `requirements.txt` (`reportlab` for PDF generation).
+Requirements: Python 3.10+, Java 17+, Node.js/npm (for the TypeScript build), and the Python packages listed in `requirements.txt` (`reportlab` for PDF generation).
 
 ```bash
 chmod +x run.sh
