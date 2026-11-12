@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Hisaab is a production household-finance digital twin. It estimates how often a set of goals is funded under a transparent collection of assumptions. Outputs are probabilistic scenario results, not guarantees of future market or personal outcomes, and do not constitute regulated investment advice.
+Hisaab is an educational household-finance scenario simulator. It estimates how often a set of goals is funded under a transparent collection of assumptions. Outputs are probabilistic scenario results, not guarantees of future market or personal outcomes, and do not constitute regulated investment advice.
 
 ## Monthly portfolio process
 
@@ -67,4 +67,4 @@ The target-SIP search uses the configured trial count for every bisection evalua
 
 ## Tax rule-pack scope
 
-The Tax Year 2026–27 salary/tax rule pack uses the published new-regime slabs, ₹12 lakh Section 87A threshold with marginal relief, and 4% health and education cess. The comparison is deliberately restricted to taxable/gross income up to ₹50 lakh because surcharge is not implemented in this calculator. The old-regime path is illustrative and assumes a non-senior resident individual eligible for Section 87A; age-specific slab differences are not modelled, and Chapter VI-A deductions are entered as one aggregate. This is not a tax-return computation. Official reference: https://wm.incometaxindia.gov.in/w/tax-rates-and-computation
+The illustrative Tax Year 2026–27 calculator uses the new-regime slabs published for the Income Tax Act, 2025, ₹12 lakh Section 87A threshold with marginal relief, and 4% health and education cess. The comparison is deliberately restricted to taxable/gross income up to ₹50 lakh because surcharge is not implemented in this calculator. The old-regime path is illustrative and assumes a non-senior resident individual eligible for Section 87A; age-specific slab differences are not modelled, and Chapter VI-A deductions are entered as one aggregate. This is not a tax-return computation. Official references: Income Tax Department calculator manual (https://www.incometax.gov.in/iec/foportal/help/all-topics/e-filing-services/income-tax-calculator-um) and Ministry of Finance Tax Year 2026–27 rate memorandum (https://www.indiabudget.gov.in/doc/memo.pdf). Tax Year 2026–27 under the Income Tax Act, 2025 is distinct from Assessment Year 2026–27 under the 1961 Act.
