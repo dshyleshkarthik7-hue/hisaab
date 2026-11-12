@@ -22,7 +22,7 @@ export async function simulate(input:SimulationInput,signal?:AbortSignal,onProgr
   if(signal?.aborted)throw new DOMException("Simulation cancelled","AbortError");
   const seed=(input.seed+t*1000003)>>>0,rng=createRandomStreams(seed),streams=[rng.inflation,rng.market,rng.debt,rng.unemployment,rng.medical];
   let corpus=input.savings,safe=0,income=input.income,sip=input.sip,expense=input.expense,unemployed=0,shocked=false;
-  const indexes:Record<GoalKind,number>={general:1,education:1,medical:1,home:1},success=input.goals.map(()=>true),events=input.events??[],shock_events:{month:number;kind:string;amount?:number}[],path=[corpus];
+  const indexes:Record<GoalKind,number>={general:1,education:1,medical:1,home:1},success=input.goals.map(()=>true),events=input.events??[],shock_events:{month:number;kind:string;amount?:number}[]=[],path=[corpus];
   yearly[0].push(corpus);let expenseIndex=1;
   for(let m=1;m<=years*12;m++){
    const y=Math.ceil(m/12);
