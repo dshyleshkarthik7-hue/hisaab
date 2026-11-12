@@ -88,6 +88,12 @@ def main():
         assert 0 <= result["score"] <= 1 and len(result["fan"]) == 3
         status, pdf = request(base + "/api/report/pdf", {"lang": "en", "inputs": {**scenario, "events": []}, "result": result})
         assert status == 200 and pdf.startswith(b"%PDF"), "PDF endpoint did not return a valid PDF"
+        status, telugu_pdf = request(base + "/api/report/pdf", {
+            "lang": "te",
+            "inputs": {**scenario, "events": []},
+            "result": result,
+        })
+        assert status == 200 and telugu_pdf.startswith(b"%PDF") and b"FontFile2" in telugu_pdf, "Telugu PDF font was not embedded"
 
         status, _ = request(base + "/api/simulate", {"years": 99})
         assert status == 400
