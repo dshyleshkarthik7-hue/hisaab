@@ -63,3 +63,8 @@ The response returns 25 representative household trajectories, including the low
 The diagnostic `failed_lives_with_shock_share` is an association statistic only. The Scenario Lab additionally compares each baseline trial with a paired run that removes unemployment or medical events while retaining the same deterministic market, debt and inflation streams. `failures_prevented_if_removed` and `net_failure_reduction` are counterfactual differences conditional on this model. They do not establish real-world causality and may not add up because shocks can interact.
 
 The target-SIP search uses the configured trial count for every bisection evaluation and returns the achieved score and trial count. Its result is conditional on the fixed seed and model assumptions; it is not an exact real-world required contribution.
+
+
+## Tax rule-pack scope
+
+The Tax Year 2026–27 salary/tax rule pack uses the published new-regime slabs, ₹12 lakh Section 87A threshold with marginal relief, and 4% health and education cess. The comparison is deliberately restricted to taxable/gross income up to ₹50 lakh because surcharge is not implemented in this calculator. The old-regime path is illustrative and assumes resident-individual Section 87A eligibility; Chapter VI-A deductions are entered as one aggregate. This is not a tax-return computation. Official reference: https://wm.incometaxindia.gov.in/w/tax-rates-and-computation
