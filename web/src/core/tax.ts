@@ -30,7 +30,7 @@ export function compareRegimes(grossTaxableBeforeSd:number,chapterVIA=0){
 /** Mirrors the legacy Java /api/tax payroll estimate exactly. */
 export function estimateSalary(ctc:number,basicPercent:number,professionalTaxMonthly:number){
  finiteNumber(ctc,"CTC",0,5_000_000);finiteNumber(basicPercent,"Basic pay",0,100);finiteNumber(professionalTaxMonthly,"Professional tax",0,50_000);
- const basic=ctc*basicPercent/100,employeePf=Math.min(basic*.12,1800*12),professionalTax=professionalTaxMonthly*12;
+ const basic=ctc*basicPercent/100,employeePf=Math.min(basic*.12,1800*12),professionalTax=professionalTaxMonthly;
  const taxable=Math.max(0,ctc-employeePf-75_000-professionalTax),tax=computeTax(taxable,"new").total_tax;
  const inhand=Math.max(0,ctc-tax-employeePf-professionalTax);
  return {ctc,basic,employeePf,employerPf:0,tax,professionalTax,inhand,taxable};
