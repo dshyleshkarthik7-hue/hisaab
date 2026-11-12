@@ -12,7 +12,6 @@ job-loss and medical-event assumptions, and SIP surplus cap.
 
 ## Data provenance
 `data_service` contains source links only; it does not assert current rates or populate a `verified_on` date until a live source is independently checked.
-- update cadence
 
 ## Limitations (must remain visible to users)
 - Simplified return model (lognormal monthly); no fees, taxes on gains, or fat tails.
