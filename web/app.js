@@ -475,6 +475,7 @@ async function askMitra(question) {
   try {
     const ctx = {};
     if (typeof lastResult !== "undefined" && lastResult) {
+      ctx.inputs = lastInput;
       ctx.simulation = { score: lastResult.score, depletion_odds: lastResult.depletion_odds, diagnostics: lastResult.diagnostics, target_sip: lastResult.nudge && lastResult.nudge.target_sip };
       ctx.inputs = lastInput;
     }
@@ -586,8 +587,6 @@ loadOfficialData();
     if (typeof lastInput === "undefined" || !lastInput || typeof lastResult === "undefined" || !lastResult) {
       return; // existing alert handler may also fire
     }
-    ev.stopImmediatePropagation();
-    ev.preventDefault();
     ev.stopImmediatePropagation();
     ev.preventDefault();
     try {
