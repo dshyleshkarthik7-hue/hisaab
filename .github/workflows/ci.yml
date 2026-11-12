@@ -38,3 +38,5 @@ jobs:
         run: node --check web/app.js
       - name: Full-stack smoke test
         run: python tests/smoke.py
+      - name: Docker image build
+        run: docker build -t hisaab:ci .
