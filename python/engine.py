@@ -235,6 +235,7 @@ def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, sip_amount=None, del
       "diagnostics":{"failed_lives_with_shock_share":round(shock_failures/failed,3) if all_hits<n else 0.0,
        "shock_cooccurrence_note":"Share of failed trials that also experienced at least one shock; this is association, not causal attribution.",
        "weakest_goal":weakest,"goal_failure_share":[{"name":g["name"],"failed_trials":failures[i],"failure_share":round(failures[i]/n,3)} for i,g in enumerate(goals)]},
+      "_trial_success":[bool(all_samples[i]["ok"]) for i in range(n)],
       "assumptions":{"monthly_cashflow":True,"expense_inflation":"general","goal_inflation":"category-specific","job_loss_months":6,
        "job_loss_annual_probability":.07,"medical_event_annual_probability":.05,"glide_path_enabled":glide_path,"debt_bucket_return":.065,"debt_bucket_volatility":.005,
        "life_events":p["events"],"return_model":"lognormal monthly returns calibrated to annual arithmetic mean and volatility"}}
@@ -295,8 +296,21 @@ def nudge(p,base):
         scenarios.append({"label":label,"score":r["score"],"depletion_odds":r["depletion_odds"],"ending_median":r["ending"]["p50"],
           "goals":[{"name":g["name"],"odds":g["odds"]} for g in r["goals"]]})
     best=max(scenarios[1:],key=lambda x:x["score"])
+    causal={}
+    if "_trial_success" in base and len(base["_trial_success"])==trials:
+        without_job=simulate(p,trials=trials,seed=seed,job_loss_enabled=False)
+        without_medical=simulate(p,trials=trials,seed=seed,medical_shock_enabled=False)
+        baseline=base["_trial_success"]
+        for label,counterfactual in (("unemployment",without_job),("medical",without_medical)):
+            cf=counterfactual["_trial_success"]
+            prevented=sum(1 for b,a in zip(baseline,cf) if not b and a)
+            newly_failed=sum(1 for b,a in zip(baseline,cf) if b and not a)
+            causal[label]={"failures_prevented_if_removed":prevented,
+                           "new_failures_in_counterfactual":newly_failed,
+                           "net_failure_reduction":prevented-newly_failed,
+                           "paired_trials":trials}
     return {"scenarios":scenarios,"best":{"text":best["label"],"score":best["score"]} if best["score"]>base["score"]+.005 else None,
-      "target_sip":target_sip(p,base)}
+      "shock_counterfactuals":causal,"target_sip":target_sip(p,base)}
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
@@ -324,6 +338,7 @@ class Handler(BaseHTTPRequestHandler):
                 raw = self._read_json()
                 result = simulate(raw)
                 result["nudge"] = nudge(raw, result)
+                result.pop("_trial_success", None)
                 self._reply(200, result)
                 return
             if self.path == "/tax/compute":
