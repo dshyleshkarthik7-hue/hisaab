@@ -46,6 +46,8 @@ public final class Hisaab {
 
   private static void securityHeaders(Headers h) {
     h.set("X-Content-Type-Options", "nosniff");
+    h.set("Strict-Transport-Security", "max-age=31536000");
+    h.set("X-Permitted-Cross-Domain-Policies", "none");
     h.set("X-Frame-Options", "DENY");
     h.set("Referrer-Policy", "no-referrer");
     h.set("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
