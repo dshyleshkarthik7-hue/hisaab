@@ -53,6 +53,7 @@ try{
  assert.ok(raw.includes("HindGuntur"),"PDF embeds Hind Guntur font resource");
  const parsed=await getDocument({data:new Uint8Array(bytes),isEvalSupported:false,useSystemFonts:false}).promise;
  let extracted="";for(let n=1;n<=parsed.numPages;n++){const page=await parsed.getPage(n);const text=await page.getTextContent();extracted+=text.items.map((item)=>"str" in item?item.str:"").join(" ");}
+ console.log("PDF extracted text sample:",JSON.stringify(extracted.slice(0,900)));
  assert.ok(extracted.includes("హిసాబ్"),"PDF text layer preserves Telugu report title");
  assert.ok(extracted.includes("ఆర్థిక"),"PDF text layer preserves Telugu text");
  assert.ok(fontResponses.length>=2&&fontResponses.every(x=>x.status===200),"both Telugu font files loaded successfully");
