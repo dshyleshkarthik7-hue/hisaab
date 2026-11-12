@@ -114,7 +114,7 @@ npm run build
 python -m http.server 8788
 ```
 
-Open `http://localhost:8788`. The CI pipeline runs the Python reference suite, cross-language simulation and tax fixtures, TypeScript build, a 10,000-trial × 40-year baseline benchmark, and Pages artifact checks.
+Open `http://localhost:8788`. The CI pipeline runs the Python reference suite, cross-language simulation and tax fixtures, TypeScript build, a 10,000-trial × 40-year baseline benchmark, a 4× CPU-throttled Chromium worker benchmark, and a browser PDF-download smoke test. The Scenario Lab and target-SIP bisection are on-demand actions so a 10k-trial baseline does not automatically trigger dozens of additional simulations.
 
 ### Deploy after the migration is approved and merged
 
