@@ -2,7 +2,7 @@ import { type SimulationInput, type SimulationResult } from "./src/core/simulati
 import { calculateEmi } from "./src/core/emi.js";
 import { estimateSalary, compareRegimes } from "./src/core/tax.js";
 import { answerMitra } from "./src/assistant/mitra.js";
-import pdfMake from "pdfmake/build/pdfmake.js";
+import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from "pdfnative";
 type Kind = "general" | "education" | "medical" | "home";
 interface Goal { name: string; at: number; cost: number; kind: Kind; flex: boolean }
 interface Fan { p10: number; p50: number; p90: number }
@@ -374,48 +374,53 @@ $("pdfReport").addEventListener("click", async (ev) => {
     goals:"Life goals",goal:"Goal",year:"Year",cost:"Cost in today's rupees",odds:"Goal success odds",events:"Life events",
     assumptions:"Model assumptions",notice:"Important disclaimer",generated:"Generated (UTC)"
   };
-  const table=(body:any[][],widths:any[]=["*","*"])=>({table:{headerRows:1,widths,body},layout:"lightHorizontalLines",fontSize:8,margin:[0,2,0,8]});
-  const content:any[]=[
-    {text:labels.title,style:"title"},{text:labels.sub,style:"sub"},
-    {text:labels.summary,style:"section"},
-    table([[labels.score,pct(result.score)],[labels.corpus,fmt(result.ending.p50)],[labels.depletion,pct(result.depletion_odds)]],["*","auto"]),
-    {text:labels.inputs,style:"section"},
-    table([[labels.years,String(input.years)],[labels.trials,String(result.trials)],[labels.savings,fmt(input.savings)],[labels.income,fmt(input.income)],[labels.expense,fmt(input.expense)],[labels.sip,fmt(input.sip)],[labels.ret,input.ret+"%"],[labels.vol,input.vol+"%"],[labels.growth,input.income_growth+"%"]],["*","auto"])
+  const rows=(items:any[][])=>items.map(cells=>({cells,type:"",pointed:false}));
+  const blocks:any[]=[
+    {type:"heading",text:labels.title,level:1},
+    {type:"paragraph",text:labels.sub},
+    {type:"heading",text:labels.summary,level:2},
+    {type:"table",headers:[labels.summary,""],rows:rows([[labels.score,pct(result.score)],[labels.corpus,fmt(result.ending.p50)],[labels.depletion,pct(result.depletion_odds)]])},
+    {type:"heading",text:labels.inputs,level:2},
+    {type:"table",headers:[labels.inputs,""],rows:rows([[labels.years,String(input.years)],[labels.trials,String(result.trials)],[labels.savings,fmt(input.savings)],[labels.income,fmt(input.income)],[labels.expense,fmt(input.expense)],[labels.sip,fmt(input.sip)],[labels.ret,input.ret+"%"],[labels.vol,input.vol+"%"],[labels.growth,input.income_growth+"%"]])}
   ];
-  const goalsBody:any[][]=[[labels.goal,labels.year,labels.cost,labels.odds]];
-  input.goals.forEach((g:any,i:number)=>goalsBody.push([g.name,String(result.goals[i]?.at??g.at),fmt(g.cost),pct(result.goals[i]?.odds??0)]));
-  content.push({text:labels.goals,style:"section"},table(goalsBody,["*","auto","auto","auto"]));
+  const goalsRows:any[][]=[[labels.goal,labels.year,labels.cost,labels.odds]];
+  input.goals.forEach((g:any,i:number)=>goalsRows.push([g.name,String(result.goals[i]?.at??g.at),fmt(g.cost),pct(result.goals[i]?.odds??0)]));
+  blocks.push({type:"heading",text:labels.goals,level:2},{type:"table",headers:goalsRows[0],rows:rows(goalsRows.slice(1))});
+  if(input.events?.length){
+    const eventRows:any[][]=[[labels.events,labels.year,te?"రకం":"Type",labels.cost]];
+    input.events.forEach((e:any)=>eventRows.push([e.label,String(e.year),e.kind,fmt(e.amount)]));
+    blocks.push({type:"heading",text:labels.events,level:2},{type:"table",headers:eventRows[0],rows:rows(eventRows.slice(1))});
+  }
   if(result.nudge?.scenarios?.length){
-    content.push({text:te?"సన్నివేశాల ప్రయోగశాల":"Scenario Lab",style:"section"});
-    content.push(table([[te?"సన్నివేశం":"Scenario",te?"విజయం":"Success",te?"మధ్యస్థ నిధి":"Median corpus",te?"ఖాళీ":"Depletion"],...result.nudge.scenarios.map((x:any)=>[x.label,pct(x.score),fmt(x.ending_median),pct(x.depletion_odds)])],["*","auto","auto","auto"]));
+    const scenarioRows:any[][]=[[te?"సన్నివేశం":"Scenario",te?"విజయం":"Success",te?"మధ్యస్థ నిధి":"Median corpus",te?"ఖాళీ":"Depletion"]];
+    result.nudge.scenarios.forEach((x:any)=>scenarioRows.push([x.label,pct(x.score),fmt(x.ending_median),pct(x.depletion_odds)]));
+    blocks.push({type:"heading",text:te?"సన్నివేశాల ప్రయోగశాల":"Scenario Lab",level:2},{type:"table",headers:scenarioRows[0],rows:rows(scenarioRows.slice(1))});
   }
   if(result.nudge?.target_sip){
     const target=result.nudge.target_sip;
-    content.push({text:te?"85% లక్ష్య SIP విశ్లేషణ":"85% target-SIP analysis",style:"section"});
-    content.push({text:(te?"అంచనా నెలవారీ SIP: ":"Estimated monthly SIP: ")+fmt(target.monthly_sip)+" · "+(te?"అదనపు మొత్తం: ":"Additional amount: ")+fmt(target.additional_monthly_sip)+" · "+(target.reachable?(te?"సాధ్యం":"Reachable"):(te?"పరిమితిలో సాధ్యం కాలేదు":"Not reached within modelled income ceiling"))});
+    blocks.push({type:"heading",text:te?"85% లక్ష్య SIP విశ్లేషణ":"85% target-SIP analysis",level:2});
+    blocks.push({type:"paragraph",text:(te?"అంచనా నెలవారీ SIP: ":"Estimated monthly SIP: ")+fmt(target.monthly_sip)+" · "+(te?"అదనపు మొత్తం: ":"Additional amount: ")+fmt(target.additional_monthly_sip)+" · "+(target.reachable?(te?"సాధ్యం":"Reachable"):(te?"పరిమితిలో సాధ్యం కాలేదు":"Not reached within modelled income ceiling"))});
   }
   if(result.nudge?.shock_counterfactuals){
-    const rows:any[][]=[[te?"షాక్ రకం":"Shock",te?"నివారించిన వైఫల్యాలు":"Failures prevented",te?"కొత్త వైఫల్యాలు":"New failures",te?"నికర మార్పు":"Net change"]];
-    Object.entries(result.nudge.shock_counterfactuals).forEach(([name,value]:[string,any])=>rows.push([name,String(value.failures_prevented_if_removed),String(value.new_failures_in_counterfactual),String(value.net_failure_reduction)]));
-    content.push({text:te?"జత చేసిన షాక్ ప్రతికల్పనలు":"Paired shock counterfactuals",style:"section"},table(rows,["*","auto","auto","auto"]));
+    const shockRows:any[][]=[[te?"షాక్ రకం":"Shock",te?"నివారించిన వైఫల్యాలు":"Failures prevented",te?"కొత్త వైఫల్యాలు":"New failures",te?"నికర మార్పు":"Net change"]];
+    Object.entries(result.nudge.shock_counterfactuals).forEach(([name,value]:[string,any])=>shockRows.push([name,String(value.failures_prevented_if_removed),String(value.new_failures_in_counterfactual),String(value.net_failure_reduction)]));
+    blocks.push({type:"heading",text:te?"జత చేసిన షాక్ ప్రతికల్పనలు":"Paired shock counterfactuals",level:2},{type:"table",headers:shockRows[0],rows:rows(shockRows.slice(1))});
   }
-  if(input.events?.length){
-    const rows:any[][]=[[labels.events,labels.year,te?"రకం":"Type",labels.cost]];
-    input.events.forEach((e:any)=>rows.push([e.label,String(e.year),e.kind,fmt(e.amount)]));
-    content.push({text:labels.events,style:"section"},table(rows,["*","auto","*","auto"]));
-  }
-  content.push({text:te?"వార్షిక నిధి పరిధి":"Annual corpus range",style:"section"});
-  content.push(table([[labels.year,"10th",te?"మధ్యస్థం":"Median","90th"],...result.fan.map((f:Fan,i:number)=>[String(i),fmt(f.p10),fmt(f.p50),fmt(f.p90)])],["auto","*","*","*"]));
-  content.push({text:labels.assumptions,style:"section"});
-  content.push({text:te?"నెలవారీ నగదు ప్రవాహం · వర్గాల వారీ లక్ష్య ద్రవ్యోల్బణం · లాగ్‌నార్మల్ నెలవారీ రాబడి · ఉద్యోగ విరామం మరియు వైద్య సంఘటనల నమూనా అవకాశాలు · SIP ఖర్చుల తర్వాత మిగులుకు పరిమితం.":"Monthly cash-flow simulation · category-specific goal inflation · lognormal monthly returns · modelled job-loss and medical-event probabilities · SIP capped by surplus after expenses.",fontSize:9});
-  content.push({text:labels.notice,style:"section"});
-  content.push({text:te?"ఈ నివేదిక మీ ఇన్‌పుట్‌లు మరియు నమూనా అంచనాలపై ఆధారపడుతుంది. వాస్తవ మార్కెట్ రాబడులు, పన్నులు, ఫీజులు, బీమా, అప్పులు మరియు వ్యక్తిగత పరిస్థితులు భిన్నంగా ఉండవచ్చు. Hisaab వ్యక్తిగత పెట్టుబడి లేదా పన్ను సలహా కాదు. ముఖ్య నిర్ణయాలకు అర్హత కలిగిన స్వతంత్ర నిపుణుడిని సంప్రదించండి.":"This report depends on your inputs and documented model assumptions. Actual market returns, taxes, fees, insurance, debt and personal circumstances can differ. Hisaab does not provide personalised investment or tax advice. Consult a qualified independent professional for material decisions.",fontSize:8});
-  content.push({text:labels.generated+": "+new Date().toISOString(),fontSize:7,color:"#687780",margin:[0,14,0,0]});
-  const fontBase=location.origin+"/fonts/";
-  pdfMake.addFonts({HindGuntur:{normal:fontBase+"HindGuntur-Regular.ttf",bold:fontBase+"HindGuntur-Bold.ttf",italics:fontBase+"HindGuntur-Regular.ttf",bolditalics:fontBase+"HindGuntur-Bold.ttf"}});
-  const doc={pageSize:"A4",pageMargins:[38,42,38,48],info:{title:labels.title,author:"Hisaab"},defaultStyle:{font:"HindGuntur",fontSize:9,lineHeight:1.25,color:"#1c2d36"},styles:{title:{fontSize:21,bold:true,color:"#174f40",margin:[0,0,0,4]},sub:{fontSize:10,color:"#687780",margin:[0,0,0,12]},section:{fontSize:13,bold:true,color:"#174f40",margin:[0,12,0,5]}},content,footer:(page:number,count:number)=>({text:"HISAAB  ·  "+page+" / "+count,alignment:"right",fontSize:7,color:"#687780",margin:[0,0,38,0]})};
+  blocks.push({type:"heading",text:te?"వార్షిక నిధి పరిధి":"Annual corpus range",level:2});
+  blocks.push({type:"table",headers:[labels.year,"10th",te?"మధ్యస్థం":"Median","90th"],rows:rows(result.fan.map((f:Fan,i:number)=>[String(i),fmt(f.p10),fmt(f.p50),fmt(f.p90)]))});
+  blocks.push({type:"heading",text:labels.assumptions,level:2});
+  blocks.push({type:"paragraph",text:te?"నెలవారీ నగదు ప్రవాహం · వర్గాల వారీ లక్ష్య ద్రవ్యోల్బణం · లాగ్‌నార్మల్ నెలవారీ రాబడి · ఉద్యోగ విరామం మరియు వైద్య సంఘటనల నమూనా అవకాశాలు · SIP ఖర్చుల తర్వాత మిగులుకు పరిమితం.":"Monthly cash-flow simulation · category-specific goal inflation · lognormal monthly returns · modelled job-loss and medical-event probabilities · SIP capped by surplus after expenses."});
+  blocks.push({type:"heading",text:labels.notice,level:2});
+  blocks.push({type:"paragraph",text:te?"ఈ నివేదిక మీ ఇన్‌పుట్‌లు మరియు నమూనా అంచనాలపై ఆధారపడుతుంది. వాస్తవ మార్కెట్ రాబడులు, పన్నులు, ఫీజులు, బీమా, అప్పులు మరియు వ్యక్తిగత పరిస్థితులు భిన్నంగా ఉండవచ్చు. Hisaab వ్యక్తిగత పెట్టుబడి లేదా పన్ను సలహా కాదు. ముఖ్య నిర్ణయాలకు అర్హత కలిగిన స్వతంత్ర నిపుణుడిని సంప్రదించండి.":"This report depends on your inputs and documented model assumptions. Actual market returns, taxes, fees, insurance, debt and personal circumstances can differ. Hisaab does not provide personalised investment or tax advice. Consult a qualified independent professional for material decisions."});
+  blocks.push({type:"paragraph",text:labels.generated+": "+new Date().toISOString()});
   try{
-    await pdfMake.createPdf(doc).download(te?"hisaab-nivadika.pdf":"hisaab-report.pdf");
+    registerFonts({te:()=>import("pdfnative/fonts/noto-telugu-data.js"),en:()=>import("pdfnative/fonts/noto-sans-data.js")});
+    const [teluguFont,latinFont]=await Promise.all([loadFontData("te"),loadFontData("en")]);
+    if(!teluguFont)throw new Error("Telugu font data could not be loaded");
+    const fontEntries:any[]=[{fontData:teluguFont,fontRef:"/F3",lang:"te"}];
+    if(latinFont)fontEntries.push({fontData:latinFont,fontRef:"/F4",lang:"en"});
+    const pdf=buildDocumentPDFBytes({title:labels.title,blocks,fontEntries,footerText:"HISAAB · "+new Date().toISOString()});
+    downloadBlob(pdf,te?"hisaab-nivadika.pdf":"hisaab-report.pdf");
   }catch(error){
     console.error(error);alert(te?"PDF రూపొందించలేకపోయాం. మళ్లీ ప్రయత్నించండి.":"Could not generate the PDF. Please retry.");
   }
