@@ -48,6 +48,30 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
     calcs: dict[str, Any] | None = None
     sources = _sources_block(lang)
 
+    # Live sensitivity analysis uses the exact current household inputs and deterministic engine.
+    elif context.get("inputs") and any(k in ql for k in ("85%", "85 percent", "extra sip", "increase sip", "monthly sip needed", "fragile", "weakest goal", "bottleneck")):
+        try:
+            from engine import simulate, target_sip
+            raw = context["inputs"]
+            baseline = context.get("simulation") or simulate(raw)
+            target = target_sip(raw, baseline, .85)
+            diagnostics = (context.get("simulation") or {}).get("diagnostics") or {}
+            weakest = diagnostics.get("weakest_goal")
+            failures = diagnostics.get("goal_failure_share", [])
+            bottleneck = max(failures, key=lambda x: x.get("failure_share", 0)) if failures else None
+            if lang == "te":
+                reply = (f"85% లక్ష్య సాధ్యత కోసం అదనపు నెలవారీ SIP: ₹{target['additional_monthly_sip']:,.0f}. "
+                         + ("ఈ సిమ్యులేషన్ పరిధిలో లక్ష్యాన్ని చేరవచ్చు." if target["reachable"] else "పరీక్షించిన SIP పరిధిలో 85% సాధ్యం కాలేదు.")
+                         + (f" బలహీనమైన లక్ష్యం: {weakest['name']} ({weakest['odds']*100:.1f}%)." if weakest else ""))
+            else:
+                reply = (f"Estimated additional monthly SIP to target 85% all-goals success: ₹{target['additional_monthly_sip']:,.0f}. "
+                         + ("The target is reachable in the tested range." if target["reachable"] else "The 85% target was not reached within the tested SIP range.")
+                         + (f" Weakest goal: {weakest['name']} ({weakest['odds']*100:.1f}% funded)." if weakest else "")
+                         + (f" Largest observed goal-failure driver: {bottleneck['name']}." if bottleneck else ""))
+            calcs = {"target_sip": target, "weakest_goal": weakest, "largest_goal_failure_driver": bottleneck}
+        except (ImportError, KeyError, TypeError, ValueError):
+            reply = "Run a valid household simulation first, then ask for the SIP needed to reach 85%."
+
     # Tax slabs / rules
     if any(k in ql for k in ("tax slab", "tax rule", "income tax", "పన్ను", "స్లాబ్", "87a", "regime")):
         rules = get_rules("2026-27", "new")
