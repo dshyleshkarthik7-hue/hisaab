@@ -1,6 +1,6 @@
 # Hisaab — The Many-Lives Money Lab
 
-Hisaab is a production-ready Indian household-finance digital twin. Instead of a single deterministic forecast, it runs thousands of plausible financial lives and reports the probability of funding each goal under transparent assumptions.
+Hisaab is a household-finance scenario simulator. Instead of a single deterministic forecast, it runs thousands of plausible financial lives and reports the probability of funding each goal under transparent assumptions.
 
 ## Run locally
 
@@ -29,16 +29,16 @@ The launcher serves the committed `web/app.js` deployment artifact, starts the P
 - Monthly cash-flow-aware Monte Carlo engine (standard library only).
 - Annual category-specific inflation assumptions for general, education, medical and home goals.
 - Monthly return variation, job-loss periods and medical-event scenarios.
-- Goal-level success odds, all-goals success rate, depletion odds, failure-driver diagnostics and 10th/50th/90th percentile corpus bands.
+- Goal-level success odds, all-goals success rate, depletion odds, goal failure rates and paired shock-removal counterfactuals (model-conditional, not proof of real-world causation) and 10th/50th/90th percentile corpus bands.
 - Shareable URL-hash scenarios and one-click household personas; no account or database required.
-- Reproducible scenario seeds, 24 sampled household paths, common-random-number four-way comparisons and a 36-month mandatory-goal debt glide path.
+- Reproducible scenario seeds, 25 sampled household paths, common-random-number four-way comparisons and a 36-month mandatory-goal debt glide path using 6.5% annual expected return and 0.5% annual volatility.
 - Java gateway with input bounds, request-size limits, timeouts, safer static-file path handling and basic security headers.
 - EMI calculator and an explicitly labelled illustrative Tax Year 2026–27 salary/tax estimate for CTC up to ₹50 lakh.
 - Accessible, responsive interface with safe DOM construction (no user text inserted as HTML).
 
 ## Model assumptions and limitations
 
-Hisaab is a production financial digital twin for household planning. It is not a regulated SEBI-registered advisory product and does not constitute personalised investment advice. The return model is a simplified lognormal monthly return approximation calibrated to the annual arithmetic mean and volatility and does not represent fat tails, volatility clustering, asset allocation, taxes on investments, fees or sequence-of-return effects accurately. Inflation is sampled annually by category. A job-loss event has a 7% annual probability and lasts six months; a medical event has a 5% annual probability. Expenses are inflated using the general category. The planned SIP is capped by the monthly surplus; if expenses exceed income, the deficit is withdrawn from the corpus. Surplus above the planned SIP is not separately accumulated. Debt repayments, insurance reimbursements, government benefits, changing household composition and detailed tax/payroll rules are not modelled.
+Hisaab is an educational household-finance scenario simulator. It is not a regulated SEBI-registered advisory product and does not constitute personalised investment advice. The return model is a simplified lognormal monthly return approximation calibrated to the annual arithmetic mean and volatility and does not represent fat tails, volatility clustering, asset allocation, taxes on investments, fees or sequence-of-return effects accurately. Inflation is sampled annually by category. A job-loss event has a 7% annual probability and lasts six months; a medical event has a 5% annual probability. Expenses are inflated using the general category. The planned SIP is capped by the monthly surplus; if expenses exceed income, the deficit is withdrawn from the corpus. Surplus above the planned SIP is not separately accumulated. Debt repayments, insurance reimbursements, government benefits, changing household composition and detailed tax/payroll rules are not modelled.
 
 The salary estimator is a simplified Tax Year 2026–27 new-regime illustration for CTC up to ₹50 lakh. It assumes a resident individual eligible for Section 87A, employer and employee PF at 12% of basic, a ₹75,000 standard deduction, and user-entered professional tax withheld from take-home pay. It does not model surcharge, special-rate income, every CTC component or every payroll rule. Verify current rules and payroll details independently.
 
@@ -64,4 +64,4 @@ The tests cover input validation, deterministic reproducibility, expense/income 
 
 A production container definition and Render blueprint are included. The application uses Java 17 and Python 3.11+, with no third-party runtime dependencies. Set `HISAAB_HTTP_PORT` and `HISAAB_ENGINE_PORT` only when required by your platform. Do not expose the internal Python engine port publicly.
 
-This package is production-ready for deployment. Standard production controls remain your responsibility at the edge: managed TLS, WAF/rate limiting, uptime monitoring, and periodic review of the illustrative Tax Year 2026–27 salary estimator against current official rules. The application stores no user financial data.
+This package has not been independently security-reviewed or production-certified. Run the automated checks and complete deployment-specific hardening before public use. Standard production controls remain your responsibility at the edge: managed TLS, WAF/rate limiting, uptime monitoring, and periodic review of the illustrative Tax Year 2026–27 salary estimator against current official rules. The application stores no user financial data.
