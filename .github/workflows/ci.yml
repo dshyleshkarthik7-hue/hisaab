@@ -31,7 +31,9 @@ jobs:
       - name: Python syntax checks
         run: python -m compileall -q python tests
       - name: TypeScript source check
-        run: npx --yes --package typescript@5.7.3 tsc -p web
+        run: npx --yes --package typescript@5.7.3 tsc --noEmit -p web
+      - name: Frontend package check
+        run: cd web && npx --yes --package typescript@5.7.3 tsc --noEmit -p tsconfig.json
       - name: Java compile
         run: javac java/Hisaab.java
       - name: Browser JavaScript syntax
