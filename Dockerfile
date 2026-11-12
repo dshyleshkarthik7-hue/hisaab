@@ -1,5 +1,5 @@
 # Compile the maintained TypeScript source into the browser artifact.
-FROM node:22-alpine AS frontend
+FROM node:25-alpine AS frontend
 WORKDIR /src
 COPY web/app.ts web/tsconfig.json ./web/
 RUN npm install --global typescript@5.7.3 && tsc -p web
