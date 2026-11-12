@@ -54,7 +54,7 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
             from engine import simulate, target_sip
             raw = context["inputs"]
             baseline = context.get("simulation") or simulate(raw)
-            target = target_sip(raw, baseline, .85)
+            target = (context.get("simulation") or {}).get("target_sip") or target_sip(raw, baseline, .85)
             diagnostics = (context.get("simulation") or {}).get("diagnostics") or {}
             weakest = diagnostics.get("weakest_goal")
             failures = diagnostics.get("goal_failure_share", [])
@@ -73,7 +73,7 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
                 reply = (f"Estimated additional monthly SIP to target 85% all-goals success: ₹{target['additional_monthly_sip']:,.0f}. "
                          + ("The target is reachable in the tested range." if target["reachable"] else "The 85% target was not reached within the tested SIP range.")
                          + (f" Weakest goal: {weakest['name']} ({weakest['odds']*100:.1f}% funded)." if weakest else "")
-                         + (f" Largest observed goal-failure driver: {bottleneck['name']}." if bottleneck else "")
+                         + (f" Goal with the highest observed miss rate: {bottleneck['name']}." if bottleneck else "")
                          + (f" Paired counterfactual: removing {shock_driver['name']} would have prevented {shock_driver['failures_prevented_if_removed']} failed lives (net reduction {shock_driver['net_failure_reduction']}) across {shock_driver['paired_trials']} identical random paths. This is model-conditional, not proof of real-world causation." if shock_driver and shock_driver["net_failure_reduction"] > 0 else " No positive net failure reduction was detected in the paired shock-removal tests."))
             calcs = {"target_sip": target, "weakest_goal": weakest, "largest_goal_failure_driver": bottleneck,
                      "paired_shock_counterfactual": shock_cf}
