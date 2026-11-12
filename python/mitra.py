@@ -72,31 +72,6 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
         except (ImportError, KeyError, TypeError, ValueError):
             reply = "Run a valid household simulation first, then ask for the SIP needed to reach 85%."
 
-    # Counterfactual sensitivity: estimate the SIP needed for the configured success target.
-    if context.get("simulation") and any(k in ql for k in ("how much sip", "sip needed", "increase sip", "85%", "surplus required", "ఎంత sip", "ఎస్ఐపి ఎంత")):
-        sim = context["simulation"]
-        target = sim.get("target_sip") or {}
-        weakest = (sim.get("diagnostics") or {}).get("weakest_goal") or {}
-        if target:
-            extra = float(target.get("additional_monthly_sip") or 0)
-            monthly = float(target.get("monthly_sip") or 0)
-            reachable = bool(target.get("reachable", True))
-            if lang == "te":
-                reply = (f"85% లక్ష్య సాధ్యత కోసం అంచనా నెలవారీ SIP: ₹{monthly:,.0f}.\n"
-                         f"ప్రస్తుత SIPపై అదనంగా అవసరం: ₹{extra:,.0f}/నెల.\n"
-                         + ("" if reachable else "పరీక్షించిన పరిధిలో 85% లక్ష్యం చేరలేదు.\n")
-                         + (f"అత్యంత బలహీన లక్ష్యం: {weakest.get('name','తెలియదు')}." if weakest else "")
-                         + "\nఇది అదే సీడ్‌తో చేసిన సుమారు సున్నితత్వ పరీక్ష; హామీ కాదు.")
-            else:
-                reply = (f"Estimated monthly SIP for an 85% all-goals success target: ₹{monthly:,.0f}.\n"
-                         f"Additional monthly SIP versus your current plan: ₹{extra:,.0f}.\n"
-                         + ("" if reachable else "The 85% target was not reached within the tested search range.\n")
-                         + (f"Weakest goal: {weakest.get('name')}." if weakest else "")
-                         + "\nThis is a same-seed sensitivity estimate, not a guarantee.")
-            calcs = {"target_sip": target, "weakest_goal": weakest}
-        else:
-            reply = ("Run a simulation first so Mitra can estimate the additional SIP." if lang == "en"
-                     else "అదనపు SIP అంచనా కోసం ముందుగా సిమ్యులేషన్ అమలు చేయండి.")
     # Tax slabs / rules
     elif any(k in ql for k in ("tax slab", "tax rule", "income tax", "పన్ను", "స్లాబ్", "87a", "regime")):
         rules = get_rules("2026-27", "new")
