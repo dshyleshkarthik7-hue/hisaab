@@ -200,8 +200,9 @@ def target_sip(p,base,target=.85):
     p=validate(p)
     if base["score"]>=target: return {"target_score":target,"monthly_sip":p["sip"],"additional_monthly_sip":0.0,"reachable":True}
     low,high=1.0,16.0; best=None
-    for _ in range(12):
-        mid=(low+high)/2; score=simulate(p,trials=p["trials"],seed=p["seed"],sip_boost=mid)["score"]
+    target_trials=min(p["trials"],500)
+    for _ in range(10):
+        mid=(low+high)/2; score=simulate(p,trials=target_trials,seed=p["seed"],sip_boost=mid)["score"]
         if score>=target: best=mid; high=mid
         else: low=mid
     mult=best if best is not None else high; monthly=p["sip"]*mult
