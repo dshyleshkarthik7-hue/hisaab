@@ -12,7 +12,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Production HTTP gateway for Hisaab financial digital twin.
+ * HTTP gateway for the Hisaab household-finance simulator.
  * Java 17+. No third-party dependencies.
  *
  * Hardening: security headers, body limits, path normalization,
