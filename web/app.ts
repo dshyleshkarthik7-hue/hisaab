@@ -150,11 +150,13 @@ $("sim").addEventListener("submit", async event => {
   if (invalid) { error.textContent = "Add 1–12 valid goals. Each needs a name, positive cost and target year within your simulation."; error.hidden = false; return; }
   const body = { years, savings: num("savings"), income: num("income"), sip: num("sip"), expense: num("expense"), ret: num("ret"), vol: num("vol"), income_growth: num("income_growth"), medical_shock: num("medical_shock"), seed: num("seed"), shocks: data.has("shocks"), goals, events: readEvents() };
   button.disabled = true; button.textContent = "Simulating possible lives…"; error.hidden = true;
+  const cancel = el("button", "button button-quiet", "Cancel simulation"); cancel.type = "button"; cancel.id = "cancelSimulation"; button.parentElement?.append(cancel);
+  cancel.addEventListener("click", () => { activeWorker?.terminate(); activeWorker = null; workerRunId++; cancel.remove(); button.disabled = false; button.textContent = "Run the futures ↗"; error.textContent = "Simulation cancelled."; error.hidden = false; });
   try {
     const payload = await runInWorker(body as SimulationInput);
     show(payload as Result); $("out").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) { error.textContent = `Could not run the simulation: ${(e as Error).message}`; error.hidden = false; }
-  finally { button.disabled = false; button.replaceChildren(document.createTextNode("Run the futures "), el("span", "", "↗")); }
+  finally { document.getElementById("cancelSimulation")?.remove(); button.disabled = false; button.replaceChildren(document.createTextNode("Run the futures "), el("span", "", "↗")); }
 });
 
 $("add").addEventListener("click", () => {
