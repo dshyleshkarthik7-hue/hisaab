@@ -4,13 +4,16 @@ import assert from "node:assert/strict";
 
 const browser=await chromium.launch({headless:true});
 try{
- const page=await browser.newPage({acceptDownloads:true});
+ const context=await browser.newContext({acceptDownloads:true,viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+ const page=await context.newPage();
  const pageErrors=[];const consoleErrors=[];const failedRequests=[];const fontResponses=[];
  page.on("pageerror",e=>pageErrors.push(e.message));
  page.on("console",m=>{if(m.type()==="error")consoleErrors.push(m.text());});
  page.on("requestfailed",r=>failedRequests.push({url:r.url(),failure:r.failure()?.errorText}));
  page.on("response",r=>{if(r.url().includes("HindGuntur"))fontResponses.push({url:r.url(),status:r.status()});});
  await page.goto("http://127.0.0.1:8788/",{waitUntil:"networkidle"});
+ const horizontalOverflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
+ assert.equal(horizontalOverflow,false,"mobile viewport should not have horizontal overflow");
  await page.locator('[name="years"]').fill("1");
  await page.locator('[name="trials"]').fill("100");
  await page.locator('[name="savings"]').fill("500000");
@@ -77,7 +80,7 @@ try{
  assert.equal(throttled.trials,10000,"throttled core benchmark trial count");
  assert.equal(throttled.fan_years,41,"throttled core benchmark horizon");
  assert.ok(throttled.elapsed_ms<90000,"4x-throttled core benchmark under 90 seconds");
- console.log(JSON.stringify({browser:"Chromium headless",pdf_bytes:bytes.length,filename:download.suggestedFilename(),fonts:fontResponses,scenarioLab:"visible",worker_benchmark:benchmark,throttled_core_benchmark:{cpu_rate:4,...throttled},status:"passed"}));
+ console.log(JSON.stringify({browser:"Chromium headless mobile viewport",pdf_bytes:bytes.length,filename:download.suggestedFilename(),fonts:fontResponses,scenarioLab:"visible",worker_benchmark:benchmark,throttled_core_benchmark:{cpu_rate:4,...throttled},status:"passed"}));
 
 
 }finally{await browser.close();}
