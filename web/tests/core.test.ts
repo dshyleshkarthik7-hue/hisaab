@@ -12,6 +12,9 @@ async function main(){
  const marginal=computeTax(1200001);assert(marginal.total_tax<=1.04,"marginal relief before cess");
  assert(compareRegimes(1500000).new&&compareRegimes(1500000).old,"regime comparison");
  const salary=estimateSalary(1500000,40,200);assert(salary.inhand>0&&salary.employeePf===21600,"legacy payroll PF cap");
+ close(salary.professionalTax,200,"legacy payroll professional-tax treatment");
+ close(salary.tax,94099.2,"legacy payroll annual tax");
+ close(salary.inhand,1384100.8,"legacy payroll annual take-home");
  const py=createRandomStreams(42).market,reference=[0.626510132123957,0.2378966714398918,0.5267182881671381,0.19939398289007337,0.08856495685172938];
  reference.forEach((v)=>close(py(),v,"CPython MT19937 random stream"));
  const gauss=createRandomStreams(42).market.gauss,gaussRef=-0.5162537474415101;close(gauss(),gaussRef,"CPython gauss");
