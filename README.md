@@ -13,7 +13,7 @@ chmod +x run.sh
 
 Open <http://localhost:8080>. Stop with `Ctrl+C`.
 
-The launcher compiles `web/app.ts` to `web/app.js`, starts the Python simulation service on `127.0.0.1:8081`, then starts the Java gateway on `127.0.0.1:8080`.
+The launcher serves the committed `web/app.js` deployment artifact, starts the Python simulation service on `127.0.0.1:8081`, then starts the Java gateway on `127.0.0.1:8080`.
 
 ## Platform systems
 
@@ -29,8 +29,9 @@ The launcher compiles `web/app.ts` to `web/app.js`, starts the Python simulation
 - Monthly cash-flow-aware Monte Carlo engine (standard library only).
 - Annual category-specific inflation assumptions for general, education, medical and home goals.
 - Monthly return variation, job-loss periods and medical-event scenarios.
-- Goal-level success odds, all-goals success rate, depletion odds and 10th/50th/90th percentile corpus bands.
-- Reproducible scenario seeds and common-random-number three-way scenario comparison (Baseline vs SIP uplift vs goal timing).
+- Goal-level success odds, all-goals success rate, depletion odds, failure-driver diagnostics and 10th/50th/90th percentile corpus bands.
+- Shareable URL-hash scenarios and one-click household personas; no account or database required.
+- Reproducible scenario seeds, 24 sampled household paths, common-random-number four-way comparisons and a 36-month mandatory-goal debt glide path.
 - Java gateway with input bounds, request-size limits, timeouts, safer static-file path handling and basic security headers.
 - EMI calculator and an explicitly labelled illustrative Tax Year 2026–27 salary/tax estimate for CTC up to ₹50 lakh.
 - Accessible, responsive interface with safe DOM construction (no user text inserted as HTML).
