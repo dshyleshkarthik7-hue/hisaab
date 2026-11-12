@@ -1,4 +1,4 @@
-import { simulateComplete, type SimulationInput } from "../core/simulation.js";
+import { simulate, simulateComplete, type SimulationInput } from "../core/simulation.js";
 type Request={type:"run"|"baseline";id:number;input:SimulationInput}|{type:"cancel";id:number};
 const scope=self as unknown as DedicatedWorkerGlobalScope;
 const controllers=new Map<number,AbortController>();
