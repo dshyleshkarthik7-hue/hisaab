@@ -12,6 +12,18 @@ import data_service
 
 
 class SecurityAndTaxTests(unittest.TestCase):
+    def test_ingestion_caps_external_response_size(self):
+        class Response:
+            status = 200
+            headers = {"Content-Type": "text/html"}
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self, size=-1): return b"x" * size
+        with patch("ingestion.urllib.request.urlopen", return_value=Response()):
+            result = ingestion.fetch_source("rbi")
+        self.assertEqual(result["status"], "fetch_failed")
+        self.assertIn("2 MB", result["error"])
+
     def test_ingestion_rejects_path_traversal(self):
         with tempfile.TemporaryDirectory() as directory:
             candidates = Path(directory) / "candidates"
