@@ -6,7 +6,7 @@
 - Bounded request bodies (64 KB), finite numeric validation, upstream request timeouts and exact-length body reads.
 - Static file path normalization and real-path containment.
 - Python engine bound to loopback only; public gateway uses a bounded worker pool and queue.
-- Per-client in-memory rate limiting. On Render, the trusted Cloudflare `CF-Connecting-IP` header is used; X-Forwarded-For is deliberately not trusted.
+- Per-client and global in-memory rate limiting. On Render, the trusted Cloudflare `CF-Connecting-IP` header is used; X-Forwarded-For is deliberately not trusted.
 - All operational ingestion endpoints require a constant-time bearer-token comparison. If `HISAAB_ADMIN_TOKEN` is absent, those routes return 404.
 - Structured access logs escape untrusted request values and omit client IP addresses.
 - Container build requires bundled Telugu fonts, uses an isolated Python virtual environment, and drops to the unprivileged `hisaab` process after preparing persistent storage.
