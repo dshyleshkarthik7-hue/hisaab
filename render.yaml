@@ -1,15 +1,29 @@
 services:
   - type: web
-    name: hisaab-financial-digital-twin
+    name: hisaab
     runtime: docker
     plan: starter
-    healthCheckPath: /healthz
+    region: singapore
+    healthCheckPath: /readyz
+    autoDeploy: true
     envVars:
-      - key: HISAAB_HTTP_PORT
-        value: "8080"
       - key: HISAAB_ENGINE_PORT
         value: "8081"
       - key: HISAAB_BIND
         value: "0.0.0.0"
       - key: HISAAB_RATE_LIMIT
         value: "60"
+      - key: HISAAB_HTTP_THREADS
+        value: "8"
+      - key: HISAAB_TRUST_PROXY_HEADERS
+        value: "true"
+      - key: HISAAB_DATA_DIR
+        value: /var/data
+      - key: HISAAB_ADMIN_TOKEN
+        generateValue: true
+      - key: HISAAB_LLM_ENABLED
+        value: "false"
+    disk:
+      name: hisaab-data
+      mountPath: /var/data
+      sizeGB: 1
