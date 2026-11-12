@@ -2,6 +2,7 @@ import { type SimulationInput, type SimulationResult } from "./src/core/simulati
 import { calculateEmi } from "./src/core/emi.js";
 import { estimateSalary } from "./src/core/tax.js";
 import { answerMitra } from "./src/assistant/mitra.js";
+import pdfMake from "pdfmake/build/pdfmake.js";
 type Kind = "general" | "education" | "medical" | "home";
 interface Goal { name: string; at: number; cost: number; kind: Kind; flex: boolean }
 interface Fan { p10: number; p50: number; p90: number }
@@ -20,7 +21,7 @@ let cancelActiveSimulation: (() => void) | null = null;
 let workerRunId = 0;
 function runInWorker(input: SimulationInput): Promise<Result> {
   activeWorker?.terminate();
-  const worker = new Worker(new URL("./src/workers/simulation.worker.js", import.meta.url), {type:"module"});
+  const worker = new Worker(new URL("./src/workers/simulation.worker.bundle.js", import.meta.url), {type:"module"});
   activeWorker=worker; const id=++workerRunId;
   return new Promise((resolve,reject)=>{
     cancelActiveSimulation = () => { worker.terminate(); activeWorker=null; cancelActiveSimulation=null; reject(new DOMException("Simulation cancelled","AbortError")); };
