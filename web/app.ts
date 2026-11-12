@@ -563,7 +563,7 @@ void loadOfficialData();
   if(share) share.addEventListener("click",async()=>{
     if(!lastInput){alert("Run a simulation before sharing.");return;}
     const payload={...lastInput,seed:lastInput.seed??Number(getField("seed")?.value),shocks:lastInput.shocks??(getField("shocks") as HTMLInputElement|null)?.checked};
-    const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");
+    const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
     const url=location.origin+location.pathname+"#s="+encoded; history.replaceState(null,"",url);
     try{await navigator.clipboard.writeText(url);share.textContent="Link copied";}
     catch{share.textContent="Link ready in address bar";}
