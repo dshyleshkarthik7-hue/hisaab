@@ -3,7 +3,7 @@ name: Hisaab CI
 on:
   pull_request:
   push:
-    branches: [main, feat/parallel-lives-stress-tester]
+    branches: [main]
 
 permissions:
   contents: read
