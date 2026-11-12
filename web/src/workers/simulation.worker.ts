@@ -14,7 +14,8 @@ scope.addEventListener("message",async(event:MessageEvent<Request>)=>{
   let result:unknown;
   if(message.type==="run"||message.type==="baseline")result=await simulate(message.input,controller.signal,progress);
   else if(message.type==="scenarios")result=await nudge(message.input,message.base,controller.signal,progress,false);
-  else result=await targetSip(message.input,message.base,controller.signal,progress);
+  else if(message.type==="target")result=await targetSip(message.input,message.base,controller.signal,progress);
+  else return;
   if(!controller.signal.aborted)scope.postMessage({type:"result",id:message.id,result});
  }catch(error){scope.postMessage({type:"error",id:message.id,message:error instanceof Error?error.message:"Simulation failed"});}
  finally{controllers.delete(message.id);}
