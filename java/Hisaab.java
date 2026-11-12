@@ -80,12 +80,10 @@ public final class Hisaab {
   private static String clientIp(HttpExchange x) {
     // Do not trust caller-controlled X-Forwarded-For; edge proxies should rate-limit upstream.
     if (TRUST_PROXY_HEADERS) {
-      // Only enable behind a proxy that overwrites/appends X-Forwarded-For.
-      String forwarded = x.getRequestHeaders().getFirst("X-Forwarded-For");
-      if (forwarded != null && !forwarded.isBlank()) {
-        String[] hops = forwarded.split(",");
-        String candidate = hops[hops.length - 1].trim();
-        if (candidate.matches("[0-9a-fA-F:.]{3,64}")) return candidate;
+      // Render's Cloudflare edge overwrites CF-Connecting-IP; do not trust X-Forwarded-For.
+      String candidate = x.getRequestHeaders().getFirst("CF-Connecting-IP");
+      if (candidate != null && candidate.trim().matches("[0-9a-fA-F:.]{3,64}")) {
+        return candidate.trim();
       }
     }
     InetSocketAddress addr = x.getRemoteAddress();
