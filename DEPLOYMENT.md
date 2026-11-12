@@ -99,3 +99,37 @@ The tax and CTC tools are simplified educational estimates, not a tax-return com
 - Uptime/error monitoring, alert routing, incident response and secret-rotation procedure.
 - Restore test for the persistent disk and documented retention/deletion policy.
 - Load test at expected concurrency and a capacity decision before adding more instances.
+
+
+## Cloudflare Pages (static browser build)
+
+The static migration is developed on `migration/cloudflare-full-static` and tracked in [PR #13](https://github.com/dshyleshkarthik7-hue/hisaab/pull/13). It keeps simulation, calculators and Mitra in the browser; the Pages build output is `web`.
+
+### Build and preview locally
+
+```bash
+cd web
+npm install
+npm run build
+python -m http.server 8788
+```
+
+Open `http://localhost:8788`. The CI pipeline runs the Python reference suite, cross-language simulation and tax fixtures, TypeScript build, a 10,000-trial × 40-year baseline benchmark, and Pages artifact checks.
+
+### Deploy after the migration is approved and merged
+
+1. Create a Cloudflare Pages project named `hisaab` and connect the repository, or use the manual workflow below.
+2. In GitHub repository settings, configure the protected `production` environment with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Use a scoped token with Cloudflare Pages deployment permissions.
+3. Merge the migration only after financial-model, tax and browser/PDF acceptance reviews are complete.
+4. On the `main` branch, run **Actions → Deploy Hisaab to Cloudflare Pages → Run workflow**. The workflow is intentionally manual and refuses to deploy from a non-main branch.
+5. Verify the generated `https://hisaab.pages.dev` URL, then attach the intended custom domain in Cloudflare Pages → Custom domains. Confirm the zone is active in the same Cloudflare account and follow Cloudflare's DNS instructions; do not guess or overwrite existing DNS records.
+
+No Cloudflare credentials are stored in this repository. No production deployment or DNS modification has been performed from this migration branch.
+
+### PDF behavior
+
+The browser-only build opens a print-ready report and waits for the bundled Hind Guntur regular and bold fonts before opening the browser print dialog. Choose **Save as PDF** in that dialog. This uses the browser's Telugu text shaping; it is not a server-generated PDF download endpoint. Verify Telugu glyphs, page breaks and selectable text on supported browsers before production sign-off.
+
+### Static-build scope
+
+The browser build does not run the old server-side ingestion queue, admin endpoints or external LLM integration. It deliberately displays primary-source links instead of fabricating live rates, and Mitra uses local grounded explanations. Those operational features require separately designed Cloudflare Functions/storage/secrets and are not silently emulated by static assets.
