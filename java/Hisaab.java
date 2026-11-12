@@ -33,6 +33,10 @@ public final class Hisaab {
   // Set to 0 only behind a trusted edge proxy that enforces per-client rate limits.
   private static final int RATE_LIMIT_PER_MIN = Integer.parseInt(
       System.getenv().getOrDefault("HISAAB_RATE_LIMIT", "60"));
+  private static final int GLOBAL_RATE_LIMIT_PER_MIN = Integer.parseInt(
+      System.getenv().getOrDefault("HISAAB_GLOBAL_RATE_LIMIT", "120"));
+  private static long globalWindow = -1;
+  private static long globalCount = 0;
   private static final String ADMIN_TOKEN = System.getenv().getOrDefault("HISAAB_ADMIN_TOKEN", "");
   private static final int HTTP_THREADS = Math.max(4, Math.min(32,
       Integer.parseInt(System.getenv().getOrDefault("HISAAB_HTTP_THREADS", "8"))));
@@ -93,18 +97,22 @@ public final class Hisaab {
   }
 
   /** Sliding 60-second window rate limiter per IP. */
-  private static boolean allow(String ip) {
+  private static synchronized boolean allow(String ip) {
+    if (RATE_LIMIT_PER_MIN <= 0 && GLOBAL_RATE_LIMIT_PER_MIN <= 0) return true;
+    long window = System.currentTimeMillis() / 60_000L;
+    if (window != globalWindow) {
+      globalWindow = window;
+      globalCount = 0;
+      RATE.entrySet().removeIf(e -> e.getValue()[0] < window - 1);
+    }
+    if (GLOBAL_RATE_LIMIT_PER_MIN > 0 && ++globalCount > GLOBAL_RATE_LIMIT_PER_MIN) return false;
     if (RATE_LIMIT_PER_MIN <= 0) return true;
-    long now = System.currentTimeMillis();
-    long window = now / 60_000L;
     long[] slot = RATE.compute(ip, (k, v) -> {
       if (v == null || v[0] != window) return new long[]{window, 1};
       v[1]++;
       return v;
     });
-    if (RATE.size() > 10_000) {
-      RATE.entrySet().removeIf(e -> e.getValue()[0] < window - 1);
-    }
+    if (RATE.size() > 10_000) RATE.entrySet().removeIf(e -> e.getValue()[0] < window - 1);
     return slot[1] <= RATE_LIMIT_PER_MIN;
   }
 
