@@ -133,7 +133,8 @@ def compute_tax(
         tax = 0.0
 
     # Apply Section 87A marginal relief before adding health and education cess.
-    if regime == "new" and rebate_limit < base <= rebate_limit + 100_000:
+    if regime == "new" and base > rebate_limit:
+        # Marginal relief caps tax (before cess) at income exceeding the rebate threshold.
         tax = min(tax, base - rebate_limit)
     cess = tax * rules["cess"]
     total = tax + cess
