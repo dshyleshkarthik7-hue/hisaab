@@ -24,6 +24,8 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Python reference tests
         run: python -m unittest discover -s tests -v
+      - name: Generate Python reference fixture for browser parity
+        run: python tests/generate_browser_fixture.py
       - name: Install browser build dependencies
         working-directory: web
         run: npm install --ignore-scripts
@@ -34,6 +36,8 @@ jobs:
         run: node --check web/app.js
       - name: Core deterministic and calculator tests
         run: npx --yes --package tsx@4.19.2 tsx web/tests/core.test.ts
+      - name: Python-to-browser engine parity
+        run: npx --yes --package tsx@4.19.2 tsx web/tests/parity.test.ts
       - name: Static artifact checks
         run: test -s web/index.html && test -s web/app.js && test -s web/src/workers/simulation.worker.js
       - name: No backend API dependencies in browser entrypoint
