@@ -1,12 +1,13 @@
 import { simulate, type SimulationInput } from "../core/simulation.js";
 type Request={type:"run";id:number;input:SimulationInput}|{type:"cancel";id:number};
+const scope=self as unknown as DedicatedWorkerGlobalScope;
 const controllers=new Map<number,AbortController>();
-self.addEventListener("message",async(event:MessageEvent<Request>)=>{
+scope.addEventListener("message",async(event:MessageEvent<Request>)=>{
  const message=event.data;
  if(message.type==="cancel"){controllers.get(message.id)?.abort();return;}
  const controller=new AbortController();controllers.set(message.id,controller);
  try{
-  const result=await simulate(message.input,controller.signal,(done,total)=>self.postMessage({type:"progress",id:message.id,done,total}));
+  const result=await simulate(message.input,controller.signal,(done,total)=>scope.postMessage({type:"progress",id:message.id,done,total}));
   if(!controller.signal.aborted)self.postMessage({type:"result",id:message.id,result});
  }catch(error){self.postMessage({type:"error",id:message.id,message:error instanceof Error?error.message:"Simulation failed"});}
  finally{controllers.delete(message.id);}
