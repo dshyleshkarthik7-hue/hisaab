@@ -34,7 +34,7 @@ function validateOptions(p:SimulationInput,o:SimulationOptions){
  integer(o.delay??0,"delay",0,40);
  return {n,seed};
 }
-function trialSeed(seed:number,t:number){return (seed+t*1000003)>>>0;}
+function makeTrialSeed(seed:number,t:number){return (seed+t*1000003)>>>0;}
 export async function simulate(input:SimulationInput,signal?:AbortSignal,onProgress?:(done:number,total:number)=>void,options:SimulationOptions={}):Promise<SimulationResult>{
  validate(input);const {n,seed}=validateOptions(input,options),years=input.years,goals=input.goals;
  const adjusted=goals.map(g=>({...g,at:Math.min(years,g.at+((g.flex)?(options.delay??0):0))}));
@@ -45,7 +45,7 @@ export async function simulate(input:SimulationInput,signal?:AbortSignal,onProgr
  const glide=options.glide_path??false,jobEnabled=options.job_loss_enabled??true,medicalEnabled=options.medical_shock_enabled??true;
  for(let trial=0;trial<n;trial++){
   if(signal?.aborted)throw new DOMException("Simulation cancelled","AbortError");
-  const trialSeed=trialSeed(seed,trial),rng=createRandomStreams(trialSeed);
+  const currentTrialSeed=makeTrialSeed(seed,trial),rng=createRandomStreams(currentTrialSeed);
   let equity=input.savings,safe=0,reserves=goals.map(()=>0),income=input.income,sip=options.sip_amount??input.sip*(options.sip_boost??1),expense=input.expense;
   const infl:Record<GoalKind,number>={general:1,education:1,medical:1,home:1};
   const monthlyInfl:Record<GoalKind,number>={general:1,education:1,medical:1,home:1};
