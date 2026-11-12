@@ -77,7 +77,7 @@ class EngineTests(unittest.TestCase):
         base = engine.simulate(BASE, trials=300)
         payload = engine.nudge(BASE, base)
         self.assertIn("scenarios", payload)
-        self.assertEqual(len(payload["scenarios"]), 3)
+        self.assertEqual(len(payload["scenarios"]), 4)
         labels = [s["label"] for s in payload["scenarios"]]
         self.assertEqual(labels[0], "Baseline")
         for s in payload["scenarios"]:
@@ -87,3 +87,20 @@ class EngineTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_sample_paths_and_diagnostics_are_returned(self):
+        result = engine.simulate(BASE, trials=300)
+        self.assertEqual(len(result["sample_paths"]), 24)
+        self.assertIn("label", result["sample_paths"][0])
+        self.assertIn("weakest_goal", result["diagnostics"])
+
+    def test_glide_path_is_reported_and_reproducible(self):
+        raw = {**BASE, "years": 5, "goals": [{"name": "Education", "at": 4, "cost": 500000, "kind": "education", "flex": False}]}
+        a = engine.simulate(raw, trials=300, glide_path=True)
+        b = engine.simulate(raw, trials=300, glide_path=True)
+        self.assertEqual(a, b)
+        self.assertTrue(a["assumptions"]["glide_path_enabled"])
+
+    def test_target_sip_is_bounded(self):
+        result = engine.target_sip(BASE, engine.simulate(BASE, trials=300))
+        self.assertGreaterEqual(result["additional_monthly_sip"], 0)
