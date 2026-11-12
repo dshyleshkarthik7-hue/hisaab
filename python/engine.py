@@ -260,7 +260,7 @@ def target_sip(p,base,target=.85):
         max_income=max(max_income,income)
         income*=1+p["income_growth"]/100
         max_income=max(max_income,income)
-    high=max(p["sip"],max_income)
+    high=max(p["sip"],min(100_000_000,max_income))
     if high<=p["sip"]+0.005:
         return {"target_score":target,"monthly_sip":round(p["sip"],2),"additional_monthly_sip":0.0,
                 "reachable":False,"achieved_score":base["score"],"trials":p["trials"],
