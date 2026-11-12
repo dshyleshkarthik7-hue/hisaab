@@ -132,12 +132,11 @@ def compute_tax(
         rebate = tax
         tax = 0.0
 
+    # Apply Section 87A marginal relief before adding health and education cess.
+    if regime == "new" and rebate_limit < base <= rebate_limit + 100_000:
+        tax = min(tax, base - rebate_limit)
     cess = tax * rules["cess"]
     total = tax + cess
-
-    # Marginal relief style cap used in gateway for new regime near rebate boundary
-    if regime == "new" and base > rebate_limit and base <= rebate_limit + 100_000:
-        total = min(total, base - rebate_limit)
 
     return {
         "tax_year": rules["tax_year"],
