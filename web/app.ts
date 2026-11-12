@@ -170,7 +170,7 @@ const translations: Record<string,string> = {
   "Your future isn't":"మీ భవిష్యత్తు",
   "one number.":"ఒకే సంఖ్య కాదు.",
   "Run thousands of plausible financial lives. See which goals survive inflation, market swings, income gaps and unexpected costs — then test what could improve the odds.":"వేల సాధ్యమైన ఆర్థిక భవిష్యత్తులను పరిశీలించండి. ద్రవ్యోల్బణం, మార్కెట్ మార్పులు, ఆదాయ అంతరాలు, అనుకోని ఖర్చుల మధ్య మీ లక్ష్యాలు ఎంతవరకు సాధ్యమో తెలుసుకోండి.",
-  "Production financial digital twin · No account connection · No personal data stored":"ప్రొడక్షన్ ఆర్థిక డిజిటల్ ట్విన్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు",
+  "Household-finance scenario simulator · No account connection · No personal data stored":"ప్రొడక్షన్ ఆర్థిక డిజిటల్ ట్విన్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు",
   "01 / YOUR BASELINE":"01 / మీ ప్రస్తుత ఆర్థిక స్థితి",
   "Start with today":"ఈరోజు స్థితితో ప్రారంభించండి",
   "About 2 minutes":"సుమారు 2 నిమిషాలు",
@@ -215,7 +215,7 @@ const translations: Record<string,string> = {
   "Take-home salary":"చేతికి వచ్చే జీతం",
   "BORROWING":"రుణం",
   "SALARY ESTIMATE":"జీతం అంచనా",
-  "Production financial digital twin · Not personalised investment advice":"ప్రొడక్షన్ ఆర్థిక డిజిటల్ ట్విన్ · వ్యక్తిగతీకరించిన పెట్టుబడి సలహా కాదు"
+  "Household-finance scenario simulator · Not personalised investment advice":"ప్రొడక్షన్ ఆర్థిక డిజిటల్ ట్విన్ · వ్యక్తిగతీకరించిన పెట్టుబడి సలహా కాదు"
 };
 const tr = (value: string) => language === "te" ? (translations[value] || value) : value;
 function translateStatic(): void {
@@ -299,7 +299,7 @@ function reportHtml(): string {
   ${events?`<h2>${labels.events}</h2><table><thead><tr><th>${language==="te"?"పేరు":"Name"}</th><th>${labels.year}</th><th>${language==="te"?"రకం":"Type"}</th><th>${language==="te"?"మొత్తం":"Amount"}</th></tr></thead><tbody>${events}</tbody></table>`:""}
   <h2>${labels.assumptions}</h2><p>${language==="te"?"నెలవారీ నగదు ప్రవాహం, లక్ష్యాల వర్గాల వారీ ద్రవ్యోల్బణం, లాగ్‌నార్మల్ నెలవారీ రాబడి నమూనా, ఉద్యోగ విరామం మరియు వైద్య అత్యవసర సంఘటనల సంభావ్యతలను ఉపయోగిస్తుంది. ఫలితాలు మీరు ఎంచుకున్న సీడ్ మరియు సిమ్యులేషన్ ట్రయల్స్‌పై ఆధారపడతాయి.":"Monthly cash-flow simulation, category-specific goal inflation, lognormal monthly return approximation, and configurable job-loss and medical-event assumptions. Results depend on the selected random seed and simulation trials."}</p>
   <h2>${language==="te"?"వార్షిక నిధి పరిధి":"Annual corpus range"}</h2><table><thead><tr><th>${labels.year}</th><th>10th percentile</th><th>Median</th><th>90th percentile</th></tr></thead><tbody>${fan}</tbody></table>
-  <h2>${labels.disclaimer}</h2><p>${labels.note}</p><footer>${labels.generated}: ${new Date().toLocaleString(language==="te"?"te-IN":"en-IN")} · HISAAB · Production financial digital twin</footer>
+  <h2>${labels.disclaimer}</h2><p>${labels.note}</p><footer>${labels.generated}: ${new Date().toLocaleString(language==="te"?"te-IN":"en-IN")} · HISAAB · Household-finance scenario simulator</footer>
   <script>window.onload=()=>setTimeout(()=>window.print(),400);</script></body></html>`;
 }
 function escapeHtml(value:string):string { return value.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!)); }
@@ -348,7 +348,7 @@ const i18nExtra: Record<string, string> = {
   "Effective": "అమలు",
   "Verified": "ధృవీకరణ",
   "Source": "మూలం",
-  "Production financial digital twin · No account connection · No personal data stored":
+  "Household-finance scenario simulator · No account connection · No personal data stored":
     "ప్రొడక్షన్ ఆర్థిక డిజిటల్ ట్విన్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు",
 };
 
