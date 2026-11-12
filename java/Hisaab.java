@@ -71,10 +71,7 @@ public final class Hisaab {
   }
 
   private static String clientIp(HttpExchange x) {
-    String xf = x.getRequestHeaders().getFirst("X-Forwarded-For");
-    if (xf != null && !xf.isBlank()) {
-      return xf.split(",")[0].trim();
-    }
+    // Do not trust caller-controlled X-Forwarded-For; edge proxies should rate-limit upstream.
     InetSocketAddress addr = x.getRemoteAddress();
     return addr == null || addr.getAddress() == null ? "unknown" : addr.getAddress().getHostAddress();
   }
@@ -260,7 +257,13 @@ public final class Hisaab {
         return;
       }
       Path file = WEB.resolve(path.substring(1)).normalize();
+      Path webRoot = WEB.toRealPath();
       if (!file.startsWith(WEB) || !Files.isRegularFile(file)) {
+        send(x, 404, "text/plain", "Not found".getBytes(StandardCharsets.UTF_8));
+        return;
+      }
+      file = file.toRealPath();
+      if (!file.startsWith(webRoot)) {
         send(x, 404, "text/plain", "Not found".getBytes(StandardCharsets.UTF_8));
         return;
       }
