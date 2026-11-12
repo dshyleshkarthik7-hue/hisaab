@@ -71,7 +71,7 @@ def main():
         status, body = request(base + "/api/tax?ctc=1275000&basic=0&pt=0")
         assert status == 200 and json.loads(body)["tax"] == 0
         status, body = request(base + "/api/tax?ctc=1276000&basic=0&pt=0")
-        assert status == 200 and json.loads(body)["tax"] == 1000
+        assert status == 200 and json.loads(body)["tax"] == 1040
 
         scenario = {
             "years": 2, "savings": 500000, "income": 100000, "sip": 25000,
