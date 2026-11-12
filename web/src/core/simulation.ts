@@ -123,7 +123,7 @@ export async function nudge(p:SimulationInput,base:SimulationResult,signal?:Abor
  const seed=p.seed,trials=p.trials??2000;
  const options:[string,SimulationOptions][]=[["Baseline",{}],["3-Yr Debt Glide-Path",{glide_path:true}],["SIP +15%",{sip_boost:1.15}],["SIP +30% + Glide-Path",{sip_boost:1.30,glide_path:true}]];
  const scenarios:ScenarioCard[]=[];
- for(const [label,change] of options){const r=label==="Baseline"?base:await simulate(p,signal,onProgress,{...change,trials,seed});scenarios.push({label,score:r.score,depletion_odds:r.depletion_odds,ending_median:r.ending.p50,goals:r.goals.map(g=>({name:g.name,odds:g.odds}))});}
+ for(const [label,change] of options){const r=await simulate(p,signal,onProgress,{...change,trials,seed});scenarios.push({label,score:r.score,depletion_odds:r.depletion_odds,ending_median:r.ending.p50,goals:r.goals.map(g=>({name:g.name,odds:g.odds}))});}
  const best=scenarios.slice(1).reduce((a,b)=>b.score>a.score?b:a,scenarios[1]);
  const causal:Record<string,ShockCounterfactual>={};
  if(base._trial_success.length===trials){
