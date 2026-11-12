@@ -95,7 +95,7 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
                 up = "పైన" if s["upto"] is None else f"₹{s['upto']:,}"
                 lines.append(f"  ₹{lower:,} – {up}: {int(s['rate']*100)}%")
                 lower = s["upto"] or lower
-            lines.append(f"ధృవీకరణ తేదీ: {rules['verified_on']}. అధికారిక నోటిఫికేషన్‌ను ఎల్లప్పుడూ సరిపోల్చండి.")
+            lines.append(f"అధికారిక మూలం పరిశీలించిన తేదీ: {rules['verified_on']}. ఈ కాలిక్యులేటర్ ఉదాహరణాత్మకం; అధికారిక నోటిఫికేషన్‌ను సరిపోల్చండి.")
             reply = "\n".join(lines)
         else:
             lines = [
@@ -109,7 +109,7 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
                 up = "and above" if s["upto"] is None else f"₹{s['upto']:,}"
                 lines.append(f"  ₹{lower:,} – {up}: {int(s['rate']*100)}%")
                 lower = s["upto"] or lower
-            lines.append(f"Verified on {rules['verified_on']}. Always cross-check official notifications.")
+            lines.append(f"Official source cross-check date: {rules['verified_on']}. The calculator remains illustrative; cross-check official notifications.")
             reply = "\n".join(lines)
         calcs = {"rules": rules, "packs": list_rule_packs()}
 
