@@ -114,7 +114,7 @@ npm run build
 python -m http.server 8788
 ```
 
-Open `http://localhost:8788`. The CI pipeline runs the Python reference suite, cross-language simulation and tax fixtures, TypeScript build, a 10,000-trial × 40-year baseline benchmark, a 4× CPU-throttled Chromium worker benchmark, and a browser PDF-download smoke test. The Scenario Lab and target-SIP bisection are on-demand actions so a 10k-trial baseline does not automatically trigger dozens of additional simulations.
+Open `http://localhost:8788`. The CI pipeline runs the Python reference suite, cross-language simulation and tax fixtures, TypeScript build, a 10,000-trial × 40-year baseline benchmark, a 4× CPU-throttled Chromium core benchmark, and a mobile-viewport PDF download/text-extraction test. Latest observed results: 3.56 s for the 10k × 40-year Worker run and 12.27 s for the same core simulation at 4× CPU throttling; browser viewport 390×844. This is a throttled browser proxy, not a physical-device test. The Scenario Lab and target-SIP bisection are on-demand actions so a 10k-trial baseline does not automatically trigger dozens of additional simulations.
 
 ### Deploy after the migration is approved and merged
 
