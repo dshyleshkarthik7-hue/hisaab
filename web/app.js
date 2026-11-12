@@ -146,10 +146,10 @@ function show(r) {
     const scenarios = n && Array.isArray(n.scenarios) ? n.scenarios : null;
     if (scenarios && scenarios.length >= 2) {
         card.hidden = false;
-        $("nudgeTitle").textContent = language === "te" ? "మూడు సన్నివేశాల పోలిక" : "Three-way scenario comparison";
+        $("nudgeTitle").textContent = language === "te" ? "నాలుగు సన్నివేశాల పోలిక" : "Four-way scenario comparison";
         $("nudgeText").textContent = language === "te"
-            ? "అదే యాదృచ్ఛిక జీవితాలను ఉపయోగించి బేస్‌లైన్ మరియు రెండు ప్రత్యామ్నాయాలు."
-            : "Baseline and two alternatives using the exact same random lives.";
+            ? "అదే యాదృచ్ఛిక జీవితాలతో బేస్‌లైన్ మరియు మూడు ప్రత్యామ్నాయాలు."
+            : "Baseline and three alternatives using the exact same random lives.";
         if (compare) {
             compare.innerHTML = "";
             scenarios.forEach((s, idx) => {
