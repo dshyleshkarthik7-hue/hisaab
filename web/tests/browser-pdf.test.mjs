@@ -35,7 +35,7 @@ try{
  await page.locator("#runScenarios").click();
  await page.locator("#findTargetSip").waitFor({state:"visible",timeout:60000});
  await page.locator("#findTargetSip").click();
- await page.waitForFunction(()=>document.querySelector("#targetSip")?.textContent?.includes("Estimated SIP"),{timeout:60000});
+ await page.waitForFunction(()=>document.querySelector("#targetSip")?.textContent?.includes("Estimated SIP"),null,{timeout:60000});
  const [download]=await Promise.all([
   page.waitForEvent("download",{timeout:60000}),
   page.locator("#pdfReport").click()
