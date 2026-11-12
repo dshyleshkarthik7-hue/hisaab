@@ -136,6 +136,7 @@ class EngineTests(unittest.TestCase):
         taxable = 1_200_001
         result = tax_engine.compute_tax(taxable, regime="new")
         self.assertLessEqual(result["total_tax"], (taxable - 1_200_000) * 1.04 + 0.01)
+        self.assertGreater(result["rebate_87a"], 0)
 
 if __name__ == "__main__":
     unittest.main()
