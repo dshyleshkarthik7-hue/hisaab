@@ -2,7 +2,7 @@ services:
   - type: web
     name: hisaab
     runtime: docker
-    plan: 1c-2g
+    plan: free
     region: singapore
     healthCheckPath: /readyz
     autoDeployTrigger: checksPass
@@ -12,20 +12,16 @@ services:
       - key: HISAAB_BIND
         value: "0.0.0.0"
       - key: HISAAB_RATE_LIMIT
-        value: "60"
+        value: "40"
       - key: HISAAB_GLOBAL_RATE_LIMIT
-        value: "120"
+        value: "80"
       - key: HISAAB_HTTP_THREADS
-        value: "8"
+        value: "4"
       - key: HISAAB_TRUST_PROXY_HEADERS
         value: "true"
       - key: HISAAB_DATA_DIR
-        value: /var/data
-      - key: HISAAB_ADMIN_TOKEN
-        generateValue: true
+        value: /tmp/hisaab-data
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:MaxRAMPercentage=30 -XX:InitialRAMPercentage=10 -XX:+UseSerialGC -XX:MaxMetaspaceSize=96m"
       - key: HISAAB_LLM_ENABLED
         value: "false"
-    disk:
-      name: hisaab-data
-      mountPath: /var/data
-      sizeGB: 1
