@@ -1,10 +1,12 @@
 # Hisaab production image — Java 21 gateway + Python 3 engine
 FROM eclipse-temurin:21-jdk-jammy
 
+COPY requirements.txt /tmp/requirements.txt
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 python3-pip nodejs npm ca-certificates \
        fonts-dejavu-core \
-    && pip3 install --no-cache-dir -r requirements.txt \
+    && pip3 install --no-cache-dir -r /tmp/requirements.txt \
     && npm install --global typescript@5.7.3 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system hisaab \
