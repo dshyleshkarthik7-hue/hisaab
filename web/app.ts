@@ -131,6 +131,12 @@ function show(r: Result): void {
         art.append(title, score, meta);
         compare.append(art);
       });
+      const target=n?.target_sip, targetNode=document.getElementById("targetSip");
+      if(targetNode){targetNode.textContent=target ? (language==="te" ? `85% లక్ష్యానికి అవసరమైన అంచనా SIP: ₹${Math.round(target.monthly_sip).toLocaleString("en-IN")} · అదనంగా ₹${Math.round(target.additional_monthly_sip).toLocaleString("en-IN")} / నెల · ${target.reachable?"సాధ్యం":"ఈ నమూనాలో సాధ్యం కాలేదు"}` : `Estimated SIP for ${Math.round(target.target_score*100)}% goal success: ${inr(target.monthly_sip)} / month · Additional ${inr(target.additional_monthly_sip)} / month · ${target.reachable?"Reachable in this model":"Not reachable within the modelled income ceiling"}`) : ""; }
+      const shockNode=document.getElementById("shockComparison");
+      if(shockNode){const entries=Object.entries(n?.shock_counterfactuals??{});shockNode.replaceChildren(el("strong","",language==="te"?"జత చేసిన షాక్ పోలిక":"Paired shock counterfactuals"));for(const [key,value] of entries){shockNode.append(el("p","",`${key}: ${value.failures_prevented_if_removed} failures avoided, ${value.new_failures_in_counterfactual} new failures, net ${value.net_failure_reduction} across ${value.paired_trials} paired trials`));}}
+    } else {
+      const targetNode=document.getElementById("targetSip");if(targetNode)targetNode.textContent="";const shockNode=document.getElementById("shockComparison");if(shockNode)shockNode.textContent="";
     }
   } else {
     const best = n && (n.best || (n.text ? { text: n.text, score: n.score! } : null));
