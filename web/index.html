@@ -23,6 +23,12 @@
   <main>
     <section class="panel setup-panel">
       <div class="section-head"><div><p class="eyebrow">01 / YOUR BASELINE</p><h2>Start with today</h2></div><span class="step-tag">About 2 minutes</span></div>
+      <div class="persona-presets" aria-label="Quick-start household profiles">
+        <p class="section-note"><strong>Start with a sample household</strong> · Edit any value after loading</p>
+        <button type="button" class="button button-quiet" data-persona="grad">Fresh Grad · ₹8L CTC</button>
+        <button type="button" class="button button-quiet" data-persona="family">Young Metro Family · ₹24L CTC</button>
+        <button type="button" class="button button-quiet" data-persona="single">Single-Income Stress Test</button>
+      </div>
       <form id="sim" novalidate>
         <div class="field-grid">
           <label>Years to explore <input name="years" type="number" value="20" min="1" max="40" required><small>How far into the future?</small></label>
@@ -52,13 +58,13 @@
 
     <section id="out" class="results" hidden aria-live="polite">
       <div class="section-head"><div><p class="eyebrow">03 / THE MANY-LIVES RESULT</p><h2>Your probability landscape</h2></div><span id="seedLabel" class="step-tag"></span></div>
-      <div class="report-actions"><button type="button" id="pdfReport" class="button button-primary">Download financial report · PDF</button><span class="tiny-note">Includes your inputs, life events, goals, assumptions and simulation results. Telugu reports follow the selected language.</span></div>
+      <div class="report-actions"><button type="button" id="shareScenario" class="button button-quiet">Copy shareable scenario link</button><button type="button" id="pdfReport" class="button button-primary">Download financial report · PDF</button><span class="tiny-note">Includes your inputs, life events, goals, assumptions and simulation results. Telugu reports follow the selected language.</span></div>
       <div class="result-grid">
         <article class="result-card result-primary"><p class="eyebrow">ALL GOALS FUNDED</p><div id="score" class="score">—</div><p id="verdict" class="verdict"></p><div class="result-foot"><span id="trialLabel">2,000 trials</span><span>Same scenarios across comparisons</span></div></article>
         <article class="result-card"><p class="eyebrow">ENDING WEALTH · TODAY'S RUPEE VALUE</p><div id="endingMedian" class="metric">—</div><p class="metric-caption">Median ending corpus</p><div class="range-line"><span>10th percentile</span><strong id="endingLow">—</strong></div><div class="range-line"><span>90th percentile</span><strong id="endingHigh">—</strong></div></article>
         <article class="result-card"><p class="eyebrow">CORPUS DEPLETION</p><div id="depletion" class="metric">—</div><p class="metric-caption">Share of scenarios ending at zero</p><p class="tiny-note">A goal shortfall can exhaust the corpus in this model.</p></article>
       </div>
-      <article class="panel chart-panel"><div class="chart-title"><div><h3>How the corpus could evolve</h3><p>10th–90th percentile range, with the median path</p></div><span class="legend"><i></i> Median <i class="legend-band"></i> Middle 80%</span></div><canvas id="fan" width="1000" height="360" role="img" aria-label="Chart of the 10th, 50th and 90th percentile corpus by year"></canvas><p class="tiny-note">Values are nominal rupees. The chart shows the simulated corpus after scheduled goals are paid.</p></article>
+      <article class="panel chart-panel"><div class="chart-title"><div><h3>How the corpus could evolve</h3><p>10th–90th percentile range, with the median path</p></div><span class="legend"><i></i> Median <i class="legend-band"></i> Middle 80%</span></div><canvas id="fan" width="1000" height="360" role="img" aria-label="Chart of the 10th, 50th and 90th percentile corpus by year"></canvas><p id="diagnostics" class="tiny-note" aria-live="polite"></p><p id="chartNote" class="tiny-note"></p><p class="tiny-note">Values are in today's rupees. The chart shows the simulated corpus after scheduled goals are paid.</p></article>
       <article class="panel"><div class="chart-title"><div><h3>Goal survival map</h3><p>Probability each goal is fully funded in its scheduled year</p></div></div><div id="odds" class="odds-list"></div></article>
       <article id="nudgeCard" class="nudge-card" hidden>
         <div class="nudge-icon">✳</div>
