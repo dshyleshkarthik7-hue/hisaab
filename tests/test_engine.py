@@ -124,6 +124,13 @@ class EngineTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ingestion.approve_candidate("../outside.json")
 
+    def test_tax_engine_rejects_income_above_no_surcharge_scope(self):
+        import tax_engine
+        with self.assertRaises(ValueError):
+            tax_engine.compute_tax(5_000_001, regime="new")
+        with self.assertRaises(ValueError):
+            tax_engine.compare_regimes(5_000_001)
+
     def test_new_regime_marginal_relief_is_applied_before_cess(self):
         import tax_engine
         taxable = 1_200_001
