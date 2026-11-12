@@ -55,7 +55,7 @@ RULES_TY_2026_27_OLD = {
     "cess": 0.04,
     "notes": [
         "Old regime illustrative path. Resident individual eligibility for Section 87A is assumed; Chapter VI-A deductions are user-supplied aggregate.",
-        "Exact eligibility depends on individual facts; this is not a filing computation.",
+        "Assumes a non-senior individual; age-specific slab differences are not modelled. Exact eligibility depends on individual facts; this is not a filing computation.",
     ],
 }
 
