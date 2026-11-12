@@ -331,6 +331,10 @@ public final class Hisaab {
         return;
       }
       byte[] body = x.getRequestBody().readNBytes(length);
+      if (body.length != length) {
+        json(x, 400, "{\"error\":\"Incomplete request body\"}");
+        return;
+      }
       HttpRequest req = HttpRequest.newBuilder()
           .uri(URI.create("http://127.0.0.1:" + ENGINE_PORT + enginePath))
           .timeout(Duration.ofSeconds(25))
@@ -380,6 +384,10 @@ public final class Hisaab {
         return;
       }
       byte[] body = x.getRequestBody().readNBytes(length);
+      if (body.length != length) {
+        json(x, 400, "{\"error\":\"Incomplete request body\"}");
+        return;
+      }
       HttpRequest req = HttpRequest.newBuilder()
           .uri(URI.create("http://127.0.0.1:" + ENGINE_PORT + "/report/pdf"))
           .timeout(Duration.ofSeconds(30))
