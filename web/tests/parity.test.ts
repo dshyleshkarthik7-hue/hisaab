@@ -14,6 +14,8 @@ async function main(){
  compare(base,((({nudge,...rest}:any)=>rest)(fixture.expected)),"simulation");
  const complete=await nudge(fixture.input,base);
  compare(complete,fixture.expected.nudge,"nudge");
+ fixture.tax_cases.forEach((item:any,i:number)=>compare(computeTax(item.income,item.regime,item.via),fixture.tax_expected[i],`tax[${i}]`));
+ compare(compareRegimes(1500000,150000),fixture.regime_comparison,"regime comparison");
  console.log("Python ↔ TypeScript engine parity passed (including paths, glide path, four scenarios, paired shocks and target SIP).");
 }
 void main().catch(error=>{console.error(error);throw error;});
