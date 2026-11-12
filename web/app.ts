@@ -170,7 +170,7 @@ const translations: Record<string,string> = {
   "Your future isn't":"మీ భవిష్యత్తు",
   "one number.":"ఒకే సంఖ్య కాదు.",
   "Run thousands of plausible financial lives. See which goals survive inflation, market swings, income gaps and unexpected costs — then test what could improve the odds.":"వేల సాధ్యమైన ఆర్థిక భవిష్యత్తులను పరిశీలించండి. ద్రవ్యోల్బణం, మార్కెట్ మార్పులు, ఆదాయ అంతరాలు, అనుకోని ఖర్చుల మధ్య మీ లక్ష్యాలు ఎంతవరకు సాధ్యమో తెలుసుకోండి.",
-  "Household-finance scenario simulator · No account connection · No personal data stored":"ప్రొడక్షన్ ఆర్థిక డిజిటల్ ట్విన్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు",
+  "Household-finance scenario simulator · No account connection · No personal data stored":"కుటుంబ ఆర్థిక సన్నివేశ సిమ్యులేటర్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు",
   "01 / YOUR BASELINE":"01 / మీ ప్రస్తుత ఆర్థిక స్థితి",
   "Start with today":"ఈరోజు స్థితితో ప్రారంభించండి",
   "About 2 minutes":"సుమారు 2 నిమిషాలు",
@@ -215,7 +215,7 @@ const translations: Record<string,string> = {
   "Take-home salary":"చేతికి వచ్చే జీతం",
   "BORROWING":"రుణం",
   "SALARY ESTIMATE":"జీతం అంచనా",
-  "Household-finance scenario simulator · Not personalised investment advice":"ప్రొడక్షన్ ఆర్థిక డిజిటల్ ట్విన్ · వ్యక్తిగతీకరించిన పెట్టుబడి సలహా కాదు"
+  "Household-finance scenario simulator · Not personalised investment advice":"కుటుంబ ఆర్థిక సన్నివేశ సిమ్యులేటర్ · వ్యక్తిగతీకరించిన పెట్టుబడి సలహా కాదు"
 };
 const tr = (value: string) => language === "te" ? (translations[value] || value) : value;
 function translateStatic(): void {
@@ -349,7 +349,7 @@ const i18nExtra: Record<string, string> = {
   "Verified": "ధృవీకరణ",
   "Source": "మూలం",
   "Household-finance scenario simulator · No account connection · No personal data stored":
-    "ప్రొడక్షన్ ఆర్థిక డిజిటల్ ట్విన్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు",
+    "కుటుంబ ఆర్థిక సన్నివేశ సిమ్యులేటర్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు",
 };
 
 Object.assign(translations, i18nExtra);
