@@ -11,7 +11,8 @@
   "devDependencies": {
     "typescript": "5.7.3",
     "esbuild": "0.25.11",
-    "playwright": "1.56.1"
+    "playwright": "1.56.1",
+    "pdfjs-dist": "5.4.394"
   },
   "dependencies": {
     "pdfmake": "0.3.13"
