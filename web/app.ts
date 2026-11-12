@@ -1,6 +1,6 @@
 import { type SimulationInput, type SimulationResult } from "./src/core/simulation.js";
 import { calculateEmi } from "./src/core/emi.js";
-import { estimateSalary } from "./src/core/tax.js";
+import { estimateSalary, compareRegimes } from "./src/core/tax.js";
 import { answerMitra } from "./src/assistant/mitra.js";
 import pdfMake from "pdfmake/build/pdfmake.js";
 type Kind = "general" | "education" | "medical" | "home";
@@ -183,9 +183,11 @@ function updateQuickMath(): void {
     const tax = estimateSalary(value("ctc"), value("basic"), value("pt"));
     $("emiOut").textContent = "Monthly EMI " + inr(emi.emi) + " · Total interest " + inr(emi.interest);
     $("taxOut").textContent = "Estimated monthly take-home " + inr(tax.inhand / 12) + " · Estimated annual tax " + inr(tax.tax);
+    const comparison=compareRegimes(value("ctc"),value("deductions"));
+    $("regimeOut").textContent = "New regime " + inr(comparison.new.total_tax) + " · Old regime " + inr(comparison.old.total_tax) + " · Lower estimate: " + comparison.recommended_regime.toUpperCase() + " (difference " + inr(comparison.savings_if_recommended) + ")";
   } catch (e) { $("emiOut").textContent = (e as Error).message; $("taxOut").textContent = "Salary estimate unavailable."; }
 }
-["loan", "rate", "ly", "ctc", "basic", "pt"].forEach(id => $(id).addEventListener("input", updateQuickMath));
+["loan", "rate", "ly", "ctc", "basic", "pt", "deductions"].forEach(id => $(id).addEventListener("input", updateQuickMath));
 updateQuickMath();
 
 // Hisaab Financial Digital Twin: timed life events, Telugu interface and printable PDF report.
@@ -485,7 +487,7 @@ async function askMitra(question: string): Promise<void> {
   if (!q) return;
   appendMitraBubble("user", q);
   try {
-    const data = { reply: answerMitra(q, language, lastResult ? {score:lastResult.score,depletion_odds:lastResult.depletion_odds,goals:lastResult.goals,diagnostics:lastResult.diagnostics,nudge:lastResult.nudge??undefined} : undefined), sources: [], calculations: null };
+    const data = { reply: answerMitra(q, language, lastResult ? {score:lastResult.score,depletion_odds:lastResult.depletion_odds,goals:lastResult.goals,diagnostics:lastResult.diagnostics,nudge:lastResult.nudge??undefined,annualGrossIncome:Number(($("ctc") as HTMLInputElement).value),chapterVIA:Number(($("deductions") as HTMLInputElement).value)} : {annualGrossIncome:Number(($("ctc") as HTMLInputElement).value),chapterVIA:Number(($("deductions") as HTMLInputElement).value)}), sources: [], calculations: null };
     appendMitraBubble("mitra", data.reply, data.sources);
   } catch (e) {
     appendMitraBubble("mitra", language === "te"
