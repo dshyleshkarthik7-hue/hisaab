@@ -108,20 +108,34 @@ def percentile(values, q):
     lo = int(pos); hi = min(lo + 1, len(ordered) - 1)
     return ordered[lo] * (hi - pos) + ordered[hi] * (pos - lo)
 
-def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=False):
-    """Reproducible monthly household simulation with optional 36-month goal de-risking."""
+def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, sip_amount=None, delay=0, glide_path=False,
+             job_loss_enabled=True, medical_shock_enabled=True):
+    """Reproducible monthly household simulation with paired random streams."""
     p=validate(raw); n=int(trials if trials is not None else p["trials"])
     if not 100<=n<=10000: raise InputError("trials must be between 100 and 10000")
     if not isinstance(glide_path,bool): raise InputError("glide_path must be true or false")
-    rng=random.Random(p["seed"] if seed is None else seed); years=p["years"]; goals=p["goals"]
+    if not isinstance(job_loss_enabled,bool) or not isinstance(medical_shock_enabled,bool):
+        raise InputError("shock switches must be true or false")
+    base_seed=p["seed"] if seed is None else seed
+    if isinstance(base_seed,bool) or not isinstance(base_seed,int) or not 0<=base_seed<=2**32-1:
+        raise InputError("seed must be an integer between 0 and 4294967295")
+    if sip_amount is not None and (isinstance(sip_amount,bool) or not isinstance(sip_amount,(int,float)) or not math.isfinite(sip_amount) or not 0<=sip_amount<=100_000_000):
+        raise InputError("sip_amount must be a finite number between 0 and 100000000")
+    years=p["years"]; goals=p["goals"]
     adjusted=[dict(g,at=min(years,g["at"]+(delay if g["flex"] else 0))) for g in goals]
     events={}
     for ev in p["events"]: events.setdefault(ev["year"],[]).append(ev)
     yearly=[[] for _ in range(years+1)]; hits=[0]*len(goals); failures=[0]*len(goals)
     depleted=all_hits=shock_failures=0; samples=[]
     for trial in range(n):
+        trial_seed=(base_seed + trial*1_000_003) & 0xFFFFFFFF
+        rng_inflation=random.Random(trial_seed ^ 0x13579BDF)
+        rng_market=random.Random(trial_seed ^ 0x2468ACE0)
+        rng_debt=random.Random(trial_seed ^ 0x5A5A5A5A)
+        rng_unemployment=random.Random(trial_seed ^ 0x6C8E9CF5)
+        rng_medical=random.Random(trial_seed ^ 0x7F4A7C15)
         equity=p["savings"]; safe=0.0; reserves=[0.0]*len(goals)
-        income=p["income"]; sip=p["sip"]*sip_boost; expense=p["expense"]
+        income=p["income"]; sip=float(sip_amount) if sip_amount is not None else p["sip"]*sip_boost; expense=p["expense"]
         infl={k:1.0 for k in KINDS}; monthly_infl={k:1.0 for k in KINDS}; expense_index=1.0
         success=[True]*len(goals); unemployed=0; had_shock=False; shock_events=[]
         path=[round(equity,2)]; yearly[0].append(equity)
@@ -133,7 +147,7 @@ def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=
                     elif ev["kind"]=="expense_change": expense+=ev["amount"]
                     else: equity-=ev["amount"]*infl["general"]
                 for k,(mean,sd) in INFLATION.items():
-                    rate=max(-.02,rng.gauss(mean,sd))/100; infl[k]*=1+rate; monthly_infl[k]=(1+rate)**(1/12)
+                    rate=max(-.02,rng_inflation.gauss(mean,sd))/100; infl[k]*=1+rate; monthly_infl[k]=(1+rate)**(1/12)
                 if glide_path:
                     for i,g in enumerate(adjusted):
                         left=g["at"]-y
@@ -142,16 +156,19 @@ def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=
                             move=min(max(0.0,equity),max(0.0,pv-reserves[i]))
                             equity-=move; reserves[i]+=move
             log_mean=math.log1p(p["ret"]/100)-.5*(p["vol"]/100)**2
-            equity*=1+math.expm1(rng.gauss(log_mean/12,p["vol"]/math.sqrt(12)/100))
-            safe*=1.065**(1/12); reserves=[v*1.065**(1/12) for v in reserves]
+            equity*=1+math.expm1(rng_market.gauss(log_mean/12,p["vol"]/math.sqrt(12)/100))
+            debt_vol=.005
+            debt_log_mean=math.log1p(.065)-.5*debt_vol**2
+            debt_return=math.expm1(rng_debt.gauss(debt_log_mean/12,debt_vol/math.sqrt(12)))
+            safe*=1+debt_return; reserves=[v*(1+debt_return) for v in reserves]
             monthly_expense=expense*expense_index
-            if p["shocks"] and unemployed==0 and rng.random()<1-(1-.07)**(1/12):
+            if p["shocks"] and job_loss_enabled and unemployed==0 and rng_unemployment.random()<1-(1-.07)**(1/12):
                 unemployed=6; had_shock=True; shock_events.append({"month":month,"kind":"unemployment"})
             if unemployed: unemployed-=1; monthly_income=0.0; contribution=0.0
             else:
                 monthly_income=income; contribution=min(sip,max(0.0,monthly_income-monthly_expense))
             equity+=contribution-max(0.0,monthly_expense-monthly_income)
-            if p["shocks"] and p["medical_shock"] and rng.random()<1-(1-.05)**(1/12):
+            if p["shocks"] and medical_shock_enabled and p["medical_shock"] and rng_medical.random()<1-(1-.05)**(1/12):
                 cost=p["medical_shock"]*infl["medical"]; equity-=cost; had_shock=True
                 shock_events.append({"month":month,"kind":"medical","amount":round(cost,2)})
             if equity<0: safe=max(0.0,safe+equity); equity=0.0
@@ -188,55 +205,86 @@ def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=
         if stress is None:
             stress=next((i for i,x in enumerate(all_samples) if x["shocked"] or not x["ok"] or x["ending"]<=.01),None)
         if stress is not None: special.add(stress)
-        quantiles={ordered[round(k*(len(ordered)-1)/23)] for k in range(24)}
+        quantiles={ordered[round(k*(len(ordered)-1)/24)] for k in range(25)}
         chosen=special | quantiles
-        while len(chosen)>24:
+        while len(chosen)>25:
             removable=next((i for i in sorted(chosen,reverse=True) if i not in special),None)
             if removable is None: break
             chosen.remove(removable)
-        if len(chosen)<24:
+        if len(chosen)<25:
             for i in ordered:
                 chosen.add(i)
-                if len(chosen)==24: break
-        samples=[all_samples[i] for i in sorted(chosen)]
-        for x in samples:
-            x["label"]="worst_surviving" if worst_survivor is not None and x is all_samples[worst_survivor] else "median" if x is all_samples[mid] else "depleted_or_shocked" if stress is not None and x is all_samples[stress] else "sample"
+                if len(chosen)==25: break
+        selected=[]
+        for i in sorted(chosen):
+            x=all_samples[i]
+            tags=[]
+            if worst_survivor is not None and i==worst_survivor: tags.append("worst_surviving")
+            if i==mid: tags.append("median")
+            if stress is not None and i==stress: tags.append("depleted_or_shocked")
+            x["tags"]=tags
+            x["label"]=tags[0] if tags else "sample"
             del x["ending"]
+            selected.append(x)
+        samples=selected
     failed=max(1,n-all_hits)
     weakest=min(({"name":g["name"],"odds":hits[i]/n} for i,g in enumerate(goals)),key=lambda x:x["odds"])
     return {"score":all_hits/n,"trials":n,"seed":p["seed"] if seed is None else seed,
       "goals":[{"name":g["name"],"at":adjusted[i]["at"],"odds":hits[i]/n} for i,g in enumerate(goals)],
       "fan":fan,"sample_paths":samples,"ending":fan[-1],"depletion_odds":depleted/n,
-      "diagnostics":{"shock_attributed_failure_share":round(shock_failures/failed,3) if all_hits<n else 0.0,
+      "diagnostics":{"failed_lives_with_shock_share":round(shock_failures/failed,3) if all_hits<n else 0.0,
+       "shock_cooccurrence_note":"Share of failed trials that also experienced at least one shock; this is association, not causal attribution.",
        "weakest_goal":weakest,"goal_failure_share":[{"name":g["name"],"failed_trials":failures[i],"failure_share":round(failures[i]/n,3)} for i,g in enumerate(goals)]},
       "assumptions":{"monthly_cashflow":True,"expense_inflation":"general","goal_inflation":"category-specific","job_loss_months":6,
-       "job_loss_annual_probability":.07,"medical_event_annual_probability":.05,"glide_path_enabled":glide_path,"debt_bucket_return":.065,
+       "job_loss_annual_probability":.07,"medical_event_annual_probability":.05,"glide_path_enabled":glide_path,"debt_bucket_return":.065,"debt_bucket_volatility":.005,
        "life_events":p["events"],"return_model":"lognormal monthly returns calibrated to annual arithmetic mean and volatility"}}
 
 def target_sip(p,base,target=.85):
-    """Binary-search the smallest feasible monthly SIP for the target success odds."""
+    """Find the minimum initial monthly SIP that reaches target using all configured trials."""
     p=validate(p)
-    if not 0 < target <= 1:
+    if isinstance(target,bool) or not isinstance(target,(int,float)) or not math.isfinite(target) or not 0 < target <= 1:
         raise InputError("target must be greater than 0 and at most 1")
     if base["score"]>=target:
-        return {"target_score":target,"monthly_sip":p["sip"],"additional_monthly_sip":0.0,"reachable":True}
-    initial_surplus=max(0.0,p["income"]-p["expense"])
-    if p["sip"]<=0 or initial_surplus<=p["sip"]:
-        return {"target_score":target,"monthly_sip":p["sip"],"additional_monthly_sip":0.0,"reachable":False}
-    low,high=1.0,min(16.0,initial_surplus/p["sip"])
-    target_trials=min(p["trials"],500)
-    if simulate(p,trials=target_trials,seed=p["seed"],sip_boost=high)["score"]<target:
-        return {"target_score":target,"monthly_sip":round(p["sip"]*high,2),
-                "additional_monthly_sip":round(p["sip"]*(high-1),2),"reachable":False}
-    for _ in range(24):
+        return {"target_score":target,"monthly_sip":round(p["sip"],2),"additional_monthly_sip":0.0,
+                "reachable":True,"achieved_score":base["score"],"trials":p["trials"]}
+    income=p["income"]
+    max_income=income
+    income_events={}
+    for event in p["events"]:
+        if event["kind"]=="income_change":
+            income_events.setdefault(event["year"],0.0)
+            income_events[event["year"]]+=event["amount"]
+    for year in range(1,p["years"]+1):
+        income+=income_events.get(year,0.0)
+        max_income=max(max_income,income)
+        income*=1+p["income_growth"]/100
+        max_income=max(max_income,income)
+    high=max(p["sip"],max_income)
+    if high<=p["sip"]+0.005:
+        return {"target_score":target,"monthly_sip":round(p["sip"],2),"additional_monthly_sip":0.0,
+                "reachable":False,"achieved_score":base["score"],"trials":p["trials"],
+                "reason":"No higher planned SIP is feasible within the modelled income ceiling."}
+    upper=simulate(p,trials=p["trials"],seed=p["seed"],sip_amount=high)
+    if upper["score"]<target:
+        return {"target_score":target,"monthly_sip":round(high,2),
+                "additional_monthly_sip":round(max(0.0,high-p["sip"]),2),"reachable":False,
+                "achieved_score":upper["score"],"trials":p["trials"],
+                "reason":"Target not reached even when planned SIP is set to the modelled income ceiling."}
+    low=p["sip"]
+    for _ in range(48):
+        if high-low<=0.005: break
         mid=(low+high)/2
-        score=simulate(p,trials=target_trials,seed=p["seed"],sip_boost=mid)["score"]
+        score=simulate(p,trials=p["trials"],seed=p["seed"],sip_amount=mid)["score"]
         if score>=target: high=mid
         else: low=mid
-    monthly=p["sip"]*high
+    monthly=math.ceil(high*100-1e-9)/100
+    verified=simulate(p,trials=p["trials"],seed=p["seed"],sip_amount=monthly)
+    if verified["score"]<target:
+        monthly=round(monthly+0.01,2)
+        verified=simulate(p,trials=p["trials"],seed=p["seed"],sip_amount=monthly)
     return {"target_score":target,"monthly_sip":round(monthly,2),
-            "additional_monthly_sip":round(max(0,monthly-p["sip"]),2),"reachable":True}
-
+            "additional_monthly_sip":round(max(0.0,monthly-p["sip"]),2),"reachable":verified["score"]>=target,
+            "achieved_score":verified["score"],"trials":p["trials"],"precision_rupees":0.01}
 def nudge(p,base):
     """Four scenario comparisons using common random numbers."""
     p=validate(p); seed=p["seed"]; trials=p["trials"]
