@@ -4,7 +4,7 @@ Hisaab is a household-finance scenario simulator. Instead of a single determinis
 
 ## Run locally
 
-Requirements: Python 3.9+ and Java 17+. No Python packages or Java dependencies are required.
+Requirements: Python 3.9+, Java 17+, and the Python packages listed in `requirements.txt` (`reportlab` for PDF generation).
 
 ```bash
 chmod +x run.sh
@@ -13,7 +13,7 @@ chmod +x run.sh
 
 Open <http://localhost:8080>. Stop with `Ctrl+C`.
 
-The launcher serves the committed `web/app.js` deployment artifact, starts the Python simulation service on `127.0.0.1:8081`, then starts the Java gateway on `127.0.0.1:8080`.
+Install Python dependencies with `python3 -m pip install -r requirements.txt` before starting. The launcher serves the committed `web/app.js` deployment artifact, starts the Python simulation service on `127.0.0.1:8081`, then starts the Java gateway on `127.0.0.1:8080`.
 
 ## Platform systems
 
