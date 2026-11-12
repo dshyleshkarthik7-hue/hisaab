@@ -68,6 +68,16 @@ try{
  assert.equal(benchmark.fan_years,41,"throttled browser benchmark horizon");
  assert.equal(benchmark.sample_paths,25,"throttled browser benchmark paths");
  assert.ok(benchmark.elapsed_ms<90000,"4x-throttled browser benchmark under 90 seconds");
- console.log(JSON.stringify({browser:"Chromium headless",pdf_bytes:bytes.length,filename:download.suggestedFilename(),fonts:fontResponses,scenarioLab:"visible",mobile_cpu_emulation:"4x throttle",benchmark,status:"passed"}));
+
+ const throttled=await page.evaluate(async()=>{
+  const {simulate}=await import("/src/core/simulation.js");
+  const input={years:40,trials:10000,savings:5000000,income:150000,sip:40000,expense:80000,ret:8,vol:15,income_growth:5,medical_shock:400000,seed:20261112,shocks:true,goals:[{name:"Education",at:15,cost:2500000,kind:"education",flex:false},{name:"Home",at:25,cost:5000000,kind:"home",flex:true},{name:"Retirement",at:35,cost:10000000,kind:"general",flex:true}]};
+  const start=performance.now();const result=await simulate(input);return {elapsed_ms:Math.round(performance.now()-start),trials:result.trials,fan_years:result.fan.length};
+ });
+ assert.equal(throttled.trials,10000,"throttled core benchmark trial count");
+ assert.equal(throttled.fan_years,41,"throttled core benchmark horizon");
+ assert.ok(throttled.elapsed_ms<90000,"4x-throttled core benchmark under 90 seconds");
+ console.log(JSON.stringify({browser:"Chromium headless",pdf_bytes:bytes.length,filename:download.suggestedFilename(),fonts:fontResponses,scenarioLab:"visible",worker_benchmark:benchmark,throttled_core_benchmark:{cpu_rate:4,...throttled},status:"passed"}));
+
 
 }finally{await browser.close();}
