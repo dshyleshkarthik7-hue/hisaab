@@ -2,7 +2,7 @@
 
 ## Controls implemented in this branch
 
-- Security response headers: CSP, frame denial, nosniff, Referrer-Policy, Permissions-Policy, COOP and CORP.
+- Security response headers: strict CSP (no inline script/style), HSTS, frame denial, nosniff, Referrer-Policy, Permissions-Policy, COOP and CORP.
 - Bounded request bodies (64 KB), finite numeric validation, upstream request timeouts and exact-length body reads.
 - Static file path normalization and real-path containment.
 - Python engine bound to loopback only; public gateway uses a bounded worker pool and queue.
