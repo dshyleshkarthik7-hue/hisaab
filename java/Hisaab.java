@@ -54,7 +54,7 @@ public final class Hisaab {
     h.set("Cross-Origin-Opener-Policy", "same-origin");
     h.set("Cross-Origin-Resource-Policy", "same-origin");
     h.set("Content-Security-Policy",
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+        "default-src 'self'; script-src 'self'; style-src 'self'; " +
         "img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'self'; " +
         "frame-ancestors 'none'; form-action 'self'");
     h.set("Cache-Control", "no-store");
