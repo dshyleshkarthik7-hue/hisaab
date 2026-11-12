@@ -12,6 +12,7 @@ export interface NudgePayload {scenarios:ScenarioCard[];best:{text:string;score:
 export interface SimulationResult {score:number;trials:number;seed:number;goals:{name:string;at:number;odds:number}[];fan:Fan[];ending:Fan;depletion_odds:number;sample_paths:{ok:boolean;shocked:boolean;shock_events:{month:number;kind:string;amount?:number}[];values:number[];label:string;tags:string[]}[];diagnostics:{weakest_goal:{name:string;odds:number};failed_lives_with_shock_share:number;shock_cooccurrence_note:string;goal_failure_share:{name:string;failed_trials:number;failure_share:number}[]};nudge:NudgePayload|null;assumptions:Record<string,unknown>;_trial_success:boolean[]}
 const INFLATION:Record<GoalKind,[number,number]>={general:[6,1.2],education:[10,2],medical:[8,2],home:[5.5,1.2]};
 const KINDS=Object.keys(INFLATION) as GoalKind[];
+function pythonRoundInt(x:number){const lower=Math.floor(x),fraction=x-lower;return Math.abs(fraction-.5)<1e-12?(lower%2===0?lower:lower+1):Math.round(x);}
 function percentile(values:number[],q:number){if(!values.length)return 0;const a=[...values].sort((x,y)=>x-y),p=(a.length-1)*q,lo=Math.floor(p),hi=Math.min(lo+1,a.length-1);return a[lo]*(hi-p)+a[hi]*(p-lo);}
 function validate(p:SimulationInput){
  if(!p||typeof p!=="object")throw new Error("Request must be a JSON object");
@@ -94,7 +95,7 @@ export async function simulate(input:SimulationInput,signal?:AbortSignal,onProgr
  let stress=Array.from({length:n},(_,i)=>i).find(i=>(samples[i].shocked||!samples[i].ok||samples[i].ending<=.01)&&!special.has(i));
  if(stress===undefined)stress=Array.from({length:n},(_,i)=>i).find(i=>samples[i].shocked||!samples[i].ok||samples[i].ending<=.01);
  if(stress!==undefined)special.add(stress);
- const quantiles=new Set(Array.from({length:25},(_,k)=>ordered[Math.round(k*(ordered.length-1)/24)])),chosen=new Set([...special,...quantiles]);
+ const quantiles=new Set(Array.from({length:25},(_,k)=>ordered[pythonRoundInt(k*(ordered.length-1)/24)])),chosen=new Set([...special,...quantiles]);
  while(chosen.size>25){const removable=[...chosen].sort((a,b)=>b-a).find(i=>!special.has(i));if(removable===undefined)break;chosen.delete(removable);}
  if(chosen.size<25){for(const i of ordered){chosen.add(i);if(chosen.size===25)break;}}
  const selected=[...chosen].sort((a,b)=>a-b).map(i=>{const x=samples[i],tags:string[]=[];if(worstSurvivor!==null&&i===worstSurvivor)tags.push("worst_surviving");if(i===mid)tags.push("median");if(stress!==undefined&&i===stress)tags.push("depleted_or_shocked");return {...x,tags,label:tags[0]??"sample"};});
