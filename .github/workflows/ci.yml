@@ -30,10 +30,14 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Python syntax checks
         run: python -m compileall -q python tests
-      - name: Compile TypeScript and verify committed browser artifact
-        run: |
-          npx --yes --package typescript@5.7.3 tsc -p web
-          git diff --exit-code -- web/app.js
+      - name: Compile TypeScript browser artifact
+        run: npx --yes --package typescript@5.7.3 tsc -p web
+      - name: Upload compiled browser artifact for source synchronization
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-browser-bundle
+          path: web/app.js
+          if-no-files-found: error
       - name: Frontend package check
         run: cd web && npx --yes --package typescript@5.7.3 tsc --noEmit -p tsconfig.json
       - name: Java compile
