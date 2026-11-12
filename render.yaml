@@ -5,7 +5,7 @@ services:
     plan: starter
     region: singapore
     healthCheckPath: /readyz
-    autoDeploy: true
+    autoDeployTrigger: checksPass
     envVars:
       - key: HISAAB_ENGINE_PORT
         value: "8081"
