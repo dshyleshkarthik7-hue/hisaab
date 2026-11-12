@@ -108,8 +108,21 @@ public final class Hisaab {
 
   private static String logSafe(String value) {
     if (value == null) return "";
-    return value.replace("\\", "\\\\").replace("\"", "\\\"")
-        .replace("\r", " ").replace("\n", " ").replace("\t", " ");
+    StringBuilder safe = new StringBuilder(value.length());
+    for (int i = 0; i < value.length(); i++) {
+      char ch = value.charAt(i);
+      switch (ch) {
+        case '\\': safe.append("\\\\"); break;
+        case '"': safe.append("\\\""); break;
+        case '\n': safe.append(" "); break;
+        case '\r': safe.append(" "); break;
+        case '\t': safe.append(" "); break;
+        default:
+          if (ch < 0x20) safe.append(String.format(Locale.ROOT, "\\u%04x", (int) ch));
+          else safe.append(ch);
+      }
+    }
+    return safe.toString();
   }
 
   private static void log(String level, long id, String method, String path, int status, long ms, String detail) {
@@ -450,8 +463,10 @@ public final class Hisaab {
         return;
       } finally {
         long ms = (System.nanoTime() - start) / 1_000_000L;
-        if (status != 500) {
-          log("INFO", id, method, path, status, ms, null);
+        int actualStatus = x.getResponseCode();
+        if (actualStatus < 0) actualStatus = status;
+        if (actualStatus != 500) {
+          log("INFO", id, method, path, actualStatus, ms, null);
         }
       }
     };
