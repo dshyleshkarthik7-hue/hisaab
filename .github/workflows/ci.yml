@@ -38,6 +38,8 @@ jobs:
         run: npx --yes --package tsx@4.19.2 tsx web/tests/core.test.ts
       - name: Python-to-browser engine parity
         run: npx --yes --package tsx@4.19.2 tsx web/tests/parity.test.ts
+      - name: 10,000-trial 40-year baseline benchmark
+        run: npx --yes --package tsx@4.19.2 tsx web/tests/benchmark.test.ts
       - name: Static artifact checks
         run: test -s web/index.html && test -s web/app.js && test -s web/src/workers/simulation.worker.js
       - name: No backend API dependencies in browser entrypoint
