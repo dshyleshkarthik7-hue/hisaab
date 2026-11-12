@@ -334,18 +334,56 @@ function escapeHtml(value:string):string { return value.replace(/[&<>"']/g, c =>
 $("addEvent").addEventListener("click",()=>addEventRow({label:language==="te"?"కొత్త సంఘటన":"New life event",year:3,kind:"income_change",amount:15000}));
 $("langToggle").addEventListener("click",()=>{ language=language==="en"?"te":"en"; translateStatic(); });
 $("pdfReport").addEventListener("click", async (ev) => {
-  if (!lastInput || !lastResult) { alert(language==="te"?"ముందుగా సిమ్యులేషన్‌ను అమలు చేయండి.":"Run a simulation before creating your report."); return; }
   ev.preventDefault();
-  try {
-    const w=window.open("","_blank");
-    if(!w) throw new Error("Allow pop-ups to print your report.");
-    w.document.open(); w.document.write(reportHtml()); w.document.close();
-    await w.document.fonts.load('12px "Hind Guntur"');
-    await w.document.fonts.load('bold 12px "Hind Guntur"');
-    await w.document.fonts.ready;
-    w.focus(); w.print();
-  } catch {
-    alert(language==="te"?"నివేదిక విండోను తెరవలేకపోయాం. పాప్-అప్‌లను అనుమతించి మళ్లీ ప్రయత్నించండి.":"Could not open the report window. Allow pop-ups and try again.");
+  if (!lastInput || !lastResult) { alert(language==="te"?"ముందుగా సిమ్యులేషన్‌ను అమలు చేయండి.":"Run a simulation before creating your report."); return; }
+  const input=lastInput, result=lastResult, te=language==="te";
+  const fmt=(n:number)=>"₹"+Math.round(n).toLocaleString(te?"te-IN":"en-IN");
+  const pct=(n:number)=>(n*100).toFixed(1)+"%";
+  const labels=te?{
+    title:"హిసాబ్ ఆర్థిక భవిష్యత్ నివేదిక",sub:"కుటుంబ ఆర్థిక సన్నివేశ విశ్లేషణ",
+    summary:"సారాంశం",score:"అన్ని లక్ష్యాలు నెరవేరిన మార్గాలు",corpus:"చివరి నిధి (మధ్యస్థం)",depletion:"నిధి ఖాళీ అయిన మార్గాలు",
+    inputs:"మీరు అందించిన వివరాలు",years:"పరిశీలన కాలం",savings:"ప్రస్తుత పొదుపు",income:"నెలవారీ ఆదాయం",expense:"నెలవారీ ఖర్చులు",sip:"నెలవారీ SIP",
+    ret:"అంచనా వార్షిక రాబడి",vol:"వార్షిక రాబడి మార్పు",growth:"ఆదాయ వృద్ధి",trials:"సిమ్యులేషన్ మార్గాలు",
+    goals:"జీవిత లక్ష్యాలు",goal:"లక్ష్యం",year:"సంవత్సరం",cost:"నేటి ఖర్చు",odds:"లక్ష్య సాధ్యత",events:"జీవిత సంఘటనలు",
+    assumptions:"నమూనా అంచనాలు",notice:"ముఖ్య గమనిక",generated:"రూపొందించిన UTC సమయం"
+  }:{
+    title:"Hisaab Financial Future Report",sub:"Household-finance scenario analysis",
+    summary:"Executive summary",score:"Paths funding every goal",corpus:"Ending corpus (median)",depletion:"Paths with depleted corpus",
+    inputs:"Your inputs",years:"Projection horizon",savings:"Current savings",income:"Monthly take-home income",expense:"Monthly household expenses",sip:"Planned monthly SIP",
+    ret:"Expected annual return",vol:"Annual return volatility",growth:"Annual income growth",trials:"Simulation trials",
+    goals:"Life goals",goal:"Goal",year:"Year",cost:"Cost in today's rupees",odds:"Goal success odds",events:"Life events",
+    assumptions:"Model assumptions",notice:"Important disclaimer",generated:"Generated (UTC)"
+  };
+  const table=(body:any[][],widths:any[]=["*","*"])=>({table:{headerRows:1,widths,body},layout:"lightHorizontalLines",fontSize:8,margin:[0,2,0,8]});
+  const content:any[]=[
+    {text:labels.title,style:"title"},{text:labels.sub,style:"sub"},
+    {text:labels.summary,style:"section"},
+    table([[labels.score,pct(result.score)],[labels.corpus,fmt(result.ending.p50)],[labels.depletion,pct(result.depletion_odds)]],["*","auto"]),
+    {text:labels.inputs,style:"section"},
+    table([[labels.years,String(input.years)],[labels.trials,String(result.trials)],[labels.savings,fmt(input.savings)],[labels.income,fmt(input.income)],[labels.expense,fmt(input.expense)],[labels.sip,fmt(input.sip)],[labels.ret,input.ret+"%"],[labels.vol,input.vol+"%"],[labels.growth,input.income_growth+"%"]],["*","auto"])
+  ];
+  const goalsBody:any[][]=[[labels.goal,labels.year,labels.cost,labels.odds]];
+  input.goals.forEach((g:any,i:number)=>goalsBody.push([g.name,String(result.goals[i]?.at??g.at),fmt(g.cost),pct(result.goals[i]?.odds??0)]));
+  content.push({text:labels.goals,style:"section"},table(goalsBody,["*","auto","auto","auto"]));
+  if(input.events?.length){
+    const rows:any[][]=[[labels.events,labels.year,te?"రకం":"Type",labels.cost]];
+    input.events.forEach((e:any)=>rows.push([e.label,String(e.year),e.kind,fmt(e.amount)]));
+    content.push({text:labels.events,style:"section"},table(rows,["*","auto","*","auto"]));
+  }
+  content.push({text:te?"వార్షిక నిధి పరిధి":"Annual corpus range",style:"section"});
+  content.push(table([[labels.year,"10th",te?"మధ్యస్థం":"Median","90th"],...result.fan.map((f:Fan,i:number)=>[String(i),fmt(f.p10),fmt(f.p50),fmt(f.p90)])],["auto","*","*","*"]));
+  content.push({text:labels.assumptions,style:"section"});
+  content.push({text:te?"నెలవారీ నగదు ప్రవాహం · వర్గాల వారీ లక్ష్య ద్రవ్యోల్బణం · లాగ్‌నార్మల్ నెలవారీ రాబడి · ఉద్యోగ విరామం మరియు వైద్య సంఘటనల నమూనా అవకాశాలు · SIP ఖర్చుల తర్వాత మిగులుకు పరిమితం.":"Monthly cash-flow simulation · category-specific goal inflation · lognormal monthly returns · modelled job-loss and medical-event probabilities · SIP capped by surplus after expenses.",fontSize:9});
+  content.push({text:labels.notice,style:"section"});
+  content.push({text:te?"ఈ నివేదిక మీ ఇన్‌పుట్‌లు మరియు నమూనా అంచనాలపై ఆధారపడుతుంది. వాస్తవ మార్కెట్ రాబడులు, పన్నులు, ఫీజులు, బీమా, అప్పులు మరియు వ్యక్తిగత పరిస్థితులు భిన్నంగా ఉండవచ్చు. Hisaab వ్యక్తిగత పెట్టుబడి లేదా పన్ను సలహా కాదు. ముఖ్య నిర్ణయాలకు అర్హత కలిగిన స్వతంత్ర నిపుణుడిని సంప్రదించండి.":"This report depends on your inputs and documented model assumptions. Actual market returns, taxes, fees, insurance, debt and personal circumstances can differ. Hisaab does not provide personalised investment or tax advice. Consult a qualified independent professional for material decisions.",fontSize:8});
+  content.push({text:labels.generated+": "+new Date().toISOString(),fontSize:7,color:"#687780",margin:[0,14,0,0]});
+  const fontBase=location.origin+"/fonts/";
+  pdfMake.addFonts({HindGuntur:{normal:fontBase+"HindGuntur-Regular.ttf",bold:fontBase+"HindGuntur-Bold.ttf",italics:fontBase+"HindGuntur-Regular.ttf",bolditalics:fontBase+"HindGuntur-Bold.ttf"}});
+  const doc={pageSize:"A4",pageMargins:[38,42,38,48],info:{title:labels.title,author:"Hisaab"},defaultStyle:{font:"HindGuntur",fontSize:9,lineHeight:1.25,color:"#1c2d36"},styles:{title:{fontSize:21,bold:true,color:"#174f40",margin:[0,0,0,4]},sub:{fontSize:10,color:"#687780",margin:[0,0,0,12]},section:{fontSize:13,bold:true,color:"#174f40",margin:[0,12,0,5]}},content,footer:(page:number,count:number)=>({text:"HISAAB  ·  "+page+" / "+count,alignment:"right",fontSize:7,color:"#687780",margin:[0,0,38,0]})};
+  try{
+    await pdfMake.createPdf(doc).download(te?"hisaab-nivadika.pdf":"hisaab-report.pdf");
+  }catch(error){
+    console.error(error);alert(te?"PDF రూపొందించలేకపోయాం. మళ్లీ ప్రయత్నించండి.":"Could not generate the PDF. Please retry.");
   }
 });
 const originalShow = show;
