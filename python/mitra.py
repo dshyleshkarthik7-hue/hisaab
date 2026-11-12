@@ -1,6 +1,6 @@
 """Hisaab Mitra — grounded bilingual financial education assistant.
 
-Principle: AI explains; verified data supplies facts; Hisaab engine calculates.
+Principle: AI explains; source-linked reference material supplies context; Hisaab engine calculates.
 No invented tax slabs, rates or returns.
 """
 from __future__ import annotations
@@ -95,7 +95,7 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
                 up = "పైన" if s["upto"] is None else f"₹{s['upto']:,}"
                 lines.append(f"  ₹{lower:,} – {up}: {int(s['rate']*100)}%")
                 lower = s["upto"] or lower
-            lines.append(f"ధృవీకరణ తేదీ: {rules['verified_on']}. అధికారిక నోటిఫికేషన్‌ను ఎల్లప్పుడూ సరిపోల్చండి.")
+            lines.append(f"అధికారిక మూలం పరిశీలించిన తేదీ: {rules['verified_on']}. ఈ కాలిక్యులేటర్ ఉదాహరణాత్మకం; అధికారిక నోటిఫికేషన్‌ను సరిపోల్చండి.")
             reply = "\n".join(lines)
         else:
             lines = [
@@ -109,7 +109,7 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
                 up = "and above" if s["upto"] is None else f"₹{s['upto']:,}"
                 lines.append(f"  ₹{lower:,} – {up}: {int(s['rate']*100)}%")
                 lower = s["upto"] or lower
-            lines.append(f"Verified on {rules['verified_on']}. Always cross-check official notifications.")
+            lines.append(f"Official source cross-check date: {rules['verified_on']}. The calculator remains illustrative; cross-check official notifications.")
             reply = "\n".join(lines)
         calcs = {"rules": rules, "packs": list_rule_packs()}
 
@@ -189,17 +189,17 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
         cpi = next(i for i in snap["items"] if i["id"] == "cpi_inflation_india")
         if lang == "te":
             reply = (
-                f"RBI పాలసీ రెపో రేటు (స్నాప్‌షాట్): {repo['value']} "
-                f"— మూలం {repo['source']}, ధృవీకరణ {repo['verified_on']}.\n"
-                f"CPI ద్రవ్యోల్బణం సూచన: {cpi['value']}.\n"
+                f"RBI పాలసీ రెపో రేటు: {repo['value']} "
+                f"— మూలం {repo['source']}; ప్రత్యక్ష ధృవీకరణ లేదు.\n"
+                f"CPI ద్రవ్యోల్బణం: {cpi['value']}.\n"
                 "Hisaab సిమ్యులేషన్‌లో సాధారణ / విద్య / వైద్య / ఇల్లు వర్గాలకు వేర్వేరు ద్రవ్యోల్బణం ఉంటుంది.\n"
                 "నిర్ణయాలకు ముందు rbi.org.inలో తాజా విలువలను చూడండి."
             )
         else:
             reply = (
-                f"RBI policy repo (snapshot): {repo['value']} "
-                f"— source {repo['source']}, verified {repo['verified_on']}.\n"
-                f"CPI inflation reference: {cpi['value']}.\n"
+                f"RBI policy repo: {repo['value']} "
+                f"— source {repo['source']}; not live-verified.\n"
+                f"CPI inflation: {cpi['value']}.\n"
                 "Hisaab applies separate inflation paths for general, education, medical and home goals.\n"
                 "Confirm latest figures on rbi.org.in before decisions."
             )
@@ -243,10 +243,10 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
             )
 
     disclaimer = (
-        "Hisaab Mitra explains verified rules and Hisaab calculations. "
+        "Hisaab Mitra explains illustrative Hisaab calculations and links to official references. "
         "It does not provide personalised investment advice."
         if lang == "en"
-        else "Hisaab Mitra ధృవీకరించిన నియమాలు మరియు Hisaab లెక్కలను వివరిస్తుంది. ఇది వ్యక్తిగతీకరించిన పెట్టుబడి సలహా కాదు."
+        else "Hisaab Mitra Hisaab యొక్క ఉదాహరణాత్మక లెక్కలు మరియు అధికారిక మూలాలను వివరిస్తుంది. ఇది వ్యక్తిగతీకరించిన పెట్టుబడి సలహా కాదు."
     )
     llm_meta = None
     # Optional fluency layer: only rewrite the grounded reply; never replace facts.

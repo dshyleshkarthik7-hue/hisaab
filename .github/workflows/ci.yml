@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.10"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -30,8 +30,12 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Python syntax checks
         run: python -m compileall -q python tests
-      - name: TypeScript source check
+      - name: Compile TypeScript browser artifact
         run: npx --yes --package typescript@5.7.3 tsc -p web
+      - name: Verify generated browser artifact is in sync
+        run: git diff --exit-code -- web/app.js
+      - name: Frontend package check
+        run: cd web && npx --yes --package typescript@5.7.3 tsc --noEmit -p tsconfig.json
       - name: Java compile
         run: javac java/Hisaab.java
       - name: Browser JavaScript syntax
@@ -40,3 +44,5 @@ jobs:
         run: python tests/smoke.py
       - name: Docker image build
         run: docker build -t hisaab:ci .
+      - name: Docker runtime smoke tests
+        run: bash tests/docker_smoke.sh

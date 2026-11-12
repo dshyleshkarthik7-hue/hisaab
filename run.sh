@@ -19,7 +19,7 @@ if [[ ! -f web/app.js ]]; then
   exit 1
 fi
 
-export HISAAB_HTTP_PORT="${HISAAB_HTTP_PORT:-8080}"
+export HISAAB_HTTP_PORT="${HISAAB_HTTP_PORT:-${PORT:-8080}}"
 export HISAAB_ENGINE_PORT="${HISAAB_ENGINE_PORT:-8081}"
 export HISAAB_BIND="${HISAAB_BIND:-0.0.0.0}"
 export HISAAB_RATE_LIMIT="${HISAAB_RATE_LIMIT:-60}"
@@ -39,12 +39,22 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 # Wait for engine health before starting gateway
-for i in $(seq 1 30); do
+ENGINE_READY=0
+for i in $(seq 1 50); do
   if python3 -c "import socket; s=socket.create_connection(('127.0.0.1', int('${HISAAB_ENGINE_PORT}')), 0.3); s.close()" 2>/dev/null; then
+    ENGINE_READY=1
     break
+  fi
+  if ! kill -0 "$PY_PID" 2>/dev/null; then
+    echo "Simulation engine exited during startup." >&2
+    exit 1
   fi
   sleep 0.2
 done
+if [[ "$ENGINE_READY" != "1" ]]; then
+  echo "Simulation engine did not become ready within 10 seconds." >&2
+  exit 1
+fi
 
 java java/Hisaab.java &
 JAVA_PID=$!

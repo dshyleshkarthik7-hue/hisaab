@@ -1,0 +1,17 @@
+.git
+.github
+**/__pycache__
+**/*.py[cod]
+**/*.class
+.venv
+venv
+node_modules
+**/node_modules
+*.log
+.DS_Store
+tests
+docs
+README.md
+CHANGELOG.md
+DEPLOYMENT.md
+render.yaml

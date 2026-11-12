@@ -16,6 +16,7 @@ from typing import Any
 DATA_DIR = Path(os.environ.get("HISAAB_DATA_DIR", Path(__file__).resolve().parent / "data"))
 CANDIDATES = DATA_DIR / "candidates"
 APPROVED = DATA_DIR / "approved"
+MAX_SOURCE_BYTES = 2 * 1024 * 1024
 SOURCES = {
     "income_tax": {
         "url": "https://www.incometax.gov.in/",
@@ -56,7 +57,9 @@ def fetch_source(source_id: str, timeout: float = 12.0) -> dict[str, Any]:
     )
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            body = resp.read()
+            body = resp.read(MAX_SOURCE_BYTES + 1)
+            if len(body) > MAX_SOURCE_BYTES:
+                raise ValueError("Source response exceeds the 2 MB ingestion limit")
             status = resp.status
             ctype = resp.headers.get("Content-Type", "")
     except Exception as exc:

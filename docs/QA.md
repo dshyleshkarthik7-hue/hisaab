@@ -1,25 +1,42 @@
-# Hisaab QA and real-user validation pack
+# Hisaab QA and release acceptance pack
 
-## Automated
-- 12+ unit tests on engine validation and reproducibility
-- End-to-end smoke: health, readiness, EMI, tax, simulate, path traversal, Mitra, data snapshot
+## Automated CI
 
-## Manual checklist before go-live
-1. Telugu UI: toggle language; verify form labels, Mitra, data cards, Why panel, PDF filename.
-2. PDF: download EN and TE reports; confirm embedded font glyphs for Telugu headings.
-3. Scenario Lab: run baseline; confirm three comparison cards.
-4. Mitra: ask tax slabs, old vs new regime, SIP, goal shortfall (after a simulation).
-5. Mobile: 375px and 768px widths; no horizontal overflow on primary flows.
-6. Rate limit: confirm HTTP 429 after exceeding `HISAAB_RATE_LIMIT`.
-7. LLM off by default: `/api/llm/status` shows available=false without keys.
+The GitHub Actions pipeline checks:
+- Python unit and security/tax tests.
+- Python syntax compilation.
+- TypeScript source type-checking and browser JavaScript syntax.
+- Java source compilation.
+- Full-stack smoke tests: health/readiness, EMI, tax, simulation, PDF generation, Telugu font embedding, admin bearer-token enforcement, path traversal, Mitra and reference data.
+- Docker image build.
 
-## Real-user validation (suggested)
-- 5–10 households in Andhra Pradesh / Telangana: complete one goal plan in Telugu.
-- Capture confusion points on inflation assumptions and SIP cap behaviour.
-- Confirm PDF opens on Android Chrome and desktop Chrome/Firefox.
+## Manual acceptance before public launch
+
+1. **First deploy:** confirm Render reports Live and `/readyz` returns 200.
+2. **Browser flows:** run a scenario, add a goal and event, compare alternatives, refresh and verify no unexpected persisted profile data.
+3. **Privacy:** confirm no simulation inputs or request bodies appear in application logs; verify LLM is disabled by default.
+4. **Admin:** verify ingestion routes return 401 without the bearer token and accept the secret only from an authorized operator.
+5. **PDF:** download English and Telugu PDFs; verify glyph coverage, page breaks and numeric formatting on Android Chrome and desktop Chrome/Firefox.
+6. **Responsive UI:** validate 375px, 768px and desktop widths with keyboard navigation and screen-reader labels.
+7. **Abuse controls:** confirm rate-limit behavior, request-size limits, method rejection, path traversal rejection and overload behavior.
+8. **Persistence:** create a test ingestion candidate, redeploy, verify it persists, then exercise backup and restore.
+9. **Proxy:** verify rate-limit buckets distinguish real clients using Render's `CF-Connecting-IP` header; do not rely on caller-controlled X-Forwarded-For.
+10. **Operations:** configure uptime checks, error alerts, secret rotation, incident response and rollback ownership.
+
+## Domain sign-off required
+
+- Financial model assumptions and outputs reviewed by a qualified financial-model reviewer.
+- Tax calculator reviewed against the official Income Tax Department calculator and applicable TY/AY legislation by a qualified Indian tax professional.
+- Security and privacy review, including the threat model for shared administrator credentials and any optional external LLM processing.
+- Product/legal review of user disclosures and data-retention statements.
 
 ## Sign-off
+
 | Reviewer | Date | Result | Notes |
 |---|---|---|---|
 | Product QA | | Pass / Fail | |
-| Real-user sample | | Pass / Fail | |
+| Application security | | Pass / Fail | |
+| Privacy | | Pass / Fail | |
+| Financial methodology | | Pass / Fail | |
+| Tax rules | | Pass / Fail | |
+| Operations / recovery | | Pass / Fail | |
