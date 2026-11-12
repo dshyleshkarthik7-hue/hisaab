@@ -135,7 +135,7 @@ public final class Hisaab {
       lower = slab[0];
     }
     if (taxable <= 1_200_000) return 0;
-    if (taxable <= 1_300_000) tax = Math.min(tax, taxable - 1_200_000);
+    tax = Math.min(tax, taxable - 1_200_000);
     return tax * 1.04;
   }
 
