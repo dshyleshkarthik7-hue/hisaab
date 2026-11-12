@@ -15,7 +15,7 @@ function validate(p:SimulationInput){
  p.goals.forEach((g,i)=>{boundedText(g.name,`Goal ${i+1}`,60);integer(g.at,"Goal year",1,p.years);finiteNumber(g.cost,"Goal cost",1,1e11);if(!(g.kind in INFLATION))throw new Error("Unsupported goal inflation category");});
 }
 function gaussian(r:()=>number){const u=Math.max(Number.EPSILON,r()),v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
-export function simulate(input:SimulationInput,signal?:AbortSignal,onProgress?:(done:number,total:number)=>void):SimulationResult{
+export async function simulate(input:SimulationInput,signal?:AbortSignal,onProgress?:(done:number,total:number)=>void):Promise<SimulationResult>{
  validate(input);const n=input.trials??2000,years=input.years,goalHits=input.goals.map(()=>0),yearly=Array.from({length:years+1},()=>[] as number[]),samples:{ok:boolean;shocked:boolean;shock_events:{month:number;kind:string;amount?:number}[];values:number[];ending:number}[]=[];
  let depleted=0,failedShock=0,allHit=0;
  for(let t=0;t<n;t++){
@@ -47,7 +47,7 @@ export function simulate(input:SimulationInput,signal?:AbortSignal,onProgress?:(
   }
   success.forEach((ok,i)=>{if(ok)goalHits[i]++;});const ok=success.every(Boolean);if(ok)allHit++;else if(shocked)failedShock++;if(corpus+safe<=.01)depleted++;
   samples.push({ok,shocked,shock_events,values:path,ending:corpus+safe});
-  if((t+1)%100===0)onProgress?.(t+1,n);
+  if((t+1)%100===0){onProgress?.(t+1,n);await new Promise<void>(resolve=>setTimeout(resolve,0));}
  }
  const fan=yearly.map(v=>({p10:percentile(v,.1),p50:percentile(v,.5),p90:percentile(v,.9)}));
  const ordered=[...samples].sort((a,b)=>a.ending-b.ending),median=ordered[Math.floor(n/2)];
