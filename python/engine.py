@@ -179,10 +179,12 @@ def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=
     fan=[{"p10":round(percentile(v,.10),2),"p50":round(percentile(v,.50),2),"p90":round(percentile(v,.90),2)} for v in yearly]
     if samples:
         lo=min(range(len(samples)),key=lambda i:samples[i]["ending"])
+        survivors=[i for i,x in enumerate(samples) if x["ok"]]
+        worst_survivor=min(survivors,key=lambda i:samples[i]["ending"]) if survivors else None
         mid=sorted(range(len(samples)),key=lambda i:samples[i]["ending"])[len(samples)//2]
         shock=next((i for i,x in enumerate(samples) if x["shocked"]),lo)
         for i,x in enumerate(samples):
-            x["label"]="worst_surviving" if i==lo and x["ok"] else "median" if i==mid else "depleted_or_shocked" if i==shock else "sample"
+            x["label"]="worst_surviving" if i==worst_survivor else "median" if i==mid else "depleted_or_shocked" if i==shock else "sample"
             del x["ending"]
     failed=max(1,n-all_hits)
     weakest=min(({"name":g["name"],"odds":hits[i]/n} for i,g in enumerate(goals)),key=lambda x:x["odds"])
