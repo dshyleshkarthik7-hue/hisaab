@@ -183,8 +183,9 @@ def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=
         survivors=[i for i,x in enumerate(all_samples) if x["ok"]]
         worst_survivor=min(survivors,key=lambda i:all_samples[i]["ending"]) if survivors else None
         mid=ordered[len(ordered)//2]
+        special={i for i in (worst_survivor,mid) if i is not None}
         shock=next((i for i,x in enumerate(all_samples) if x["shocked"] and i not in special),next((i for i,x in enumerate(all_samples) if x["shocked"]),ordered[0]))
-        special={i for i in (worst_survivor,mid,shock) if i is not None}
+        special.add(shock)
         quantiles={ordered[round(k*(len(ordered)-1)/23)] for k in range(24)}
         chosen=special | quantiles
         while len(chosen)>24:
