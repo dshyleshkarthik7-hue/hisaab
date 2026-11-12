@@ -171,7 +171,7 @@ def simulate(raw, *, trials=None, seed=None, sip_boost=1.0, delay=0, glide_path=
                             success[i]=False
                             if not g["flex"]: equity=safe=0.0; reserves=[0.0]*len(reserves)
                 real=(equity+safe+sum(reserves))/infl["general"]; yearly[y].append(real)
-                if trial<24: path.append(round(real,2))
+                path.append(round(real,2))
         for i,ok in enumerate(success): hits[i]+=int(ok); failures[i]+=int(not ok)
         ok=all(success); all_hits+=int(ok); shock_failures+=int(not ok and had_shock)
         depleted+=int(equity+safe+sum(reserves)<=.01)
