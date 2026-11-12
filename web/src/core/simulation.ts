@@ -8,7 +8,7 @@ export interface SimulationOptions {trials?:number;seed?:number;sip_boost?:numbe
 export interface Fan {p10:number;p50:number;p90:number}
 export interface ScenarioCard {label:string;score:number;depletion_odds:number;ending_median:number;goals:{name:string;odds:number}[]}
 export interface ShockCounterfactual {failures_prevented_if_removed:number;new_failures_in_counterfactual:number;net_failure_reduction:number;paired_trials:number}
-export interface NudgePayload {scenarios:ScenarioCard[];best:{text:string;score:number}|null;shock_counterfactuals:Record<string,ShockCounterfactual>;target_sip:{target_score:number;monthly_sip:number;additional_monthly_sip:number;reachable:boolean;achieved_score?:number;trials:number;precision_rupees?:number;reason?:string}}
+export interface NudgePayload {scenarios:ScenarioCard[];best:{text:string;score:number}|null;shock_counterfactuals:Record<string,ShockCounterfactual>;target_sip?:{target_score:number;monthly_sip:number;additional_monthly_sip:number;reachable:boolean;achieved_score?:number;trials:number;precision_rupees?:number;reason?:string}}
 export interface SimulationResult {score:number;trials:number;seed:number;goals:{name:string;at:number;odds:number}[];fan:Fan[];ending:Fan;depletion_odds:number;sample_paths:{ok:boolean;shocked:boolean;shock_events:{month:number;kind:string;amount?:number}[];values:number[];label:string;tags:string[]}[];diagnostics:{weakest_goal:{name:string;odds:number};failed_lives_with_shock_share:number;shock_cooccurrence_note:string;goal_failure_share:{name:string;failed_trials:number;failure_share:number}[]};nudge:NudgePayload|null;assumptions:Record<string,unknown>;_trial_success:boolean[]}
 const INFLATION:Record<GoalKind,[number,number]>={general:[6,1.2],education:[10,2],medical:[8,2],home:[5.5,1.2]};
 const KINDS=Object.keys(INFLATION) as GoalKind[];
@@ -119,7 +119,7 @@ export async function targetSip(p:SimulationInput,base:SimulationResult,signal?:
  if(verified.score<target){monthly=Math.round((monthly+.01)*100)/100;verified=await simulate(p,signal,onProgress,{trials:p.trials,seed:p.seed,sip_amount:monthly});}
  return {target_score:target,monthly_sip:Math.round(monthly*100)/100,additional_monthly_sip:Math.round(Math.max(0,monthly-p.sip)*100)/100,reachable:verified.score>=target,achieved_score:verified.score,trials:base.trials,precision_rupees:.01};
 }
-export async function nudge(p:SimulationInput,base:SimulationResult,signal?:AbortSignal,onProgress?:(done:number,total:number)=>void):Promise<NudgePayload>{
+export async function nudge(p:SimulationInput,base:SimulationResult,signal?:AbortSignal,onProgress?:(done:number,total:number)=>void,includeTarget=true):Promise<NudgePayload>{
  const seed=p.seed,trials=p.trials??2000;
  const options:[string,SimulationOptions][]=[["Baseline",{}],["3-Yr Debt Glide-Path",{glide_path:true}],["SIP +15%",{sip_boost:1.15}],["SIP +30% + Glide-Path",{sip_boost:1.30,glide_path:true}]];
  const scenarios:ScenarioCard[]=[];
@@ -134,7 +134,7 @@ export async function nudge(p:SimulationInput,base:SimulationResult,signal?:Abor
    causal[label]={failures_prevented_if_removed:prevented,new_failures_in_counterfactual:newlyFailed,net_failure_reduction:prevented-newlyFailed,paired_trials:trials};
   }
  }
- const target=await targetSip(p,base,signal,onProgress);
+ const target=includeTarget?await targetSip(p,base,signal,onProgress):undefined;
  return {scenarios,best:best.score>base.score+.005?{text:best.label,score:best.score}:null,shock_counterfactuals:causal,target_sip:target};
 }
 export async function simulateComplete(input:SimulationInput,signal?:AbortSignal,onProgress?:(done:number,total:number)=>void):Promise<SimulationResult>{
