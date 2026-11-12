@@ -61,7 +61,7 @@ function readGoals() {
         return { name: get("name").value.trim(), at: Number(get("at").value), cost: Number(get("cost").value), kind: get("kind").value, flex: get("flex").checked };
     });
 }
-function drawFan(fan) {
+function drawFan(fan, samplePaths = []) {
     const canvas = $("fan"), ctx = canvas.getContext("2d");
     if (!ctx || fan.length < 2)
         return;
@@ -91,6 +91,15 @@ function drawFan(fan) {
     ctx.closePath();
     ctx.fillStyle = css("--chart-band");
     ctx.fill();
+    // Sampled household trajectories are drawn beneath the median.
+    for (const path of samplePaths) {
+        if (!Array.isArray(path.values)) continue;
+        ctx.beginPath();
+        path.values.forEach((v, i) => ctx[i ? "lineTo" : "moveTo"](px(i), py(v)));
+        ctx.strokeStyle = path.ok ? "rgba(40, 150, 112, 0.28)" : "rgba(217, 104, 82, 0.34)";
+        ctx.lineWidth = path.label === "worst_surviving" ? 2 : 1.15;
+        ctx.stroke();
+    }
     ctx.beginPath();
     fan.forEach((v, i) => ctx[i ? "lineTo" : "moveTo"](px(i), py(v.p50)));
     ctx.strokeStyle = css("--chart-line");
@@ -109,7 +118,14 @@ function show(r) {
     $("endingLow").textContent = compact(r.ending.p10);
     $("endingHigh").textContent = compact(r.ending.p90);
     $("depletion").textContent = `${Math.round(r.depletion_odds * 100)}%`;
-    drawFan(r.fan);
+    drawFan(r.fan, r.sample_paths || []);
+    const diagnostic = r.diagnostics || {};
+    const weakest = diagnostic.weakest_goal;
+    const diagNode = $("diagnostics");
+    if (diagNode) diagNode.textContent = weakest ? `Most fragile goal: ${weakest.name} (${Math.round(weakest.odds * 100)}% funded) · Failures with a recorded shock: ${Math.round((diagnostic.shock_attributed_failure_share || 0) * 100)}%` : "";
+    const shockedPath = (r.sample_paths || []).find(path => path.shock_events && path.shock_events.length);
+    const chartNote = $("chartNote");
+    if (chartNote) chartNote.textContent = `24 sampled household paths · Green: all goals funded · Coral: at least one goal missed${shockedPath ? " · Example shock: " + shockedPath.shock_events.map(event => event.kind + " at month " + event.month).join(", ") : ""}`;
     const odds = $("odds");
     odds.replaceChildren();
     for (const g of r.goals) {
@@ -262,7 +278,7 @@ const translations = {
     "ENDING WEALTH · TODAY'S RUPEE VALUE": "చివరి సంపద · నేటి రూపాయి విలువ",
     "Median ending corpus": "మధ్యస్థ చివరి నిధి",
     "CORPUS DEPLETION": "నిధి పూర్తిగా ఖಾಲీ అయ్యే అవకాశం",
-    "How the corpus could evolve": "உங்கள் நிதி வளர்ச்சி",
+    "How the corpus could evolve": "మీ నిధి ఎలా వృద్ధి చెందవచ్చు",
     "Goal survival map": "లక్ష్యాల సాధ్యత మ్యాప్",
     "04 / QUICK CHECKS": "04 / త్వరిత లెక్కలు",
     "Everyday money maths": "రోజువారీ ఆర్థిక లెక్కలు",
@@ -570,6 +586,8 @@ loadOfficialData();
     if (typeof lastInput === "undefined" || !lastInput || typeof lastResult === "undefined" || !lastResult) {
       return; // existing alert handler may also fire
     }
+    ev.stopImmediatePropagation();
+    ev.preventDefault();
     try {
       const res = await fetch("/api/report/pdf", {
         method: "POST",
