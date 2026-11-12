@@ -49,7 +49,7 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
     sources = _sources_block(lang)
 
     # Live sensitivity analysis uses the exact current household inputs and deterministic engine.
-    if context.get("inputs") and any(k in ql for k in ("85%", "85 percent", "extra sip", "increase sip", "monthly sip needed", "fragile", "weakest goal", "bottleneck")):
+    if context.get("inputs") and any(k in ql for k in ("85%", "85 percent", "extra sip", "increase sip", "monthly sip needed", "fragile", "weakest goal", "bottleneck", "which shock", "job loss impact", "medical shock impact", "shock attribution")):
         try:
             from engine import simulate, target_sip
             raw = context["inputs"]
@@ -59,6 +59,12 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
             weakest = diagnostics.get("weakest_goal")
             failures = diagnostics.get("goal_failure_share", [])
             bottleneck = max(failures, key=lambda x: x.get("failure_share", 0)) if failures else None
+            shock_cf = (context.get("simulation") or {}).get("shock_counterfactuals") or {}
+            shock_driver = max(
+                ({"name": name, **values} for name, values in shock_cf.items()),
+                key=lambda x: x.get("net_failure_reduction", 0),
+                default=None,
+            )
             if lang == "te":
                 reply = (f"85% లక్ష్య సాధ్యత కోసం అదనపు నెలవారీ SIP: ₹{target['additional_monthly_sip']:,.0f}. "
                          + ("ఈ సిమ్యులేషన్ పరిధిలో లక్ష్యాన్ని చేరవచ్చు." if target["reachable"] else "పరీక్షించిన SIP పరిధిలో 85% సాధ్యం కాలేదు.")
@@ -67,8 +73,10 @@ def answer(question: str, context: dict[str, Any] | None = None) -> dict[str, An
                 reply = (f"Estimated additional monthly SIP to target 85% all-goals success: ₹{target['additional_monthly_sip']:,.0f}. "
                          + ("The target is reachable in the tested range." if target["reachable"] else "The 85% target was not reached within the tested SIP range.")
                          + (f" Weakest goal: {weakest['name']} ({weakest['odds']*100:.1f}% funded)." if weakest else "")
-                         + (f" Largest observed goal-failure driver: {bottleneck['name']}." if bottleneck else ""))
-            calcs = {"target_sip": target, "weakest_goal": weakest, "largest_goal_failure_driver": bottleneck}
+                         + (f" Largest observed goal-failure driver: {bottleneck['name']}." if bottleneck else "")
+                         + (f" Paired counterfactual: removing {shock_driver['name']} would have prevented {shock_driver['failures_prevented_if_removed']} failed lives (net reduction {shock_driver['net_failure_reduction']}) across {shock_driver['paired_trials']} identical random paths. This is model-conditional, not proof of real-world causation." if shock_driver and shock_driver["net_failure_reduction"] > 0 else " No positive net failure reduction was detected in the paired shock-removal tests."))
+            calcs = {"target_sip": target, "weakest_goal": weakest, "largest_goal_failure_driver": bottleneck,
+                     "paired_shock_counterfactual": shock_cf}
         except (ImportError, KeyError, TypeError, ValueError):
             reply = "Run a valid household simulation first, then ask for the SIP needed to reach 85%."
 
