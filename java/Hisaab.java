@@ -3,6 +3,7 @@ import java.net.*;
 import java.net.http.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.security.MessageDigest;
 import java.io.*;
 import java.time.Duration;
 import java.time.Instant;
@@ -27,8 +28,12 @@ public final class Hisaab {
   private static final int ENGINE_PORT = Integer.parseInt(
       System.getenv().getOrDefault("HISAAB_ENGINE_PORT", "8081"));
   private static final String BIND = System.getenv().getOrDefault("HISAAB_BIND", "0.0.0.0");
+  // Set to 0 only behind a trusted edge proxy that enforces per-client rate limits.
   private static final int RATE_LIMIT_PER_MIN = Integer.parseInt(
       System.getenv().getOrDefault("HISAAB_RATE_LIMIT", "60"));
+  private static final String ADMIN_TOKEN = System.getenv().getOrDefault("HISAAB_ADMIN_TOKEN", "");
+  private static final int HTTP_THREADS = Math.max(4, Math.min(32,
+      Integer.parseInt(System.getenv().getOrDefault("HISAAB_HTTP_THREADS", "8"))));
   private static final AtomicLong REQ_ID = new AtomicLong(1);
   private static final ConcurrentHashMap<String, long[]> RATE = new ConcurrentHashMap<>();
   private static final double[][] SLABS_TY26_27 = {
@@ -78,6 +83,7 @@ public final class Hisaab {
 
   /** Sliding 60-second window rate limiter per IP. */
   private static boolean allow(String ip) {
+    if (RATE_LIMIT_PER_MIN <= 0) return true;
     long now = System.currentTimeMillis();
     long window = now / 60_000L;
     long[] slot = RATE.compute(ip, (k, v) -> {
@@ -91,10 +97,11 @@ public final class Hisaab {
     return slot[1] <= RATE_LIMIT_PER_MIN;
   }
 
-  private static void log(String level, long id, String method, String path, int status, long ms, String ip, String detail) {
+  private static void log(String level, long id, String method, String path, int status, long ms, String detail) {
+    // Do not persist client IP addresses in application logs.
     System.out.printf(Locale.ROOT,
-        "{\"ts\":\"%s\",\"level\":\"%s\",\"req\":%d,\"method\":\"%s\",\"path\":\"%s\",\"status\":%d,\"ms\":%d,\"ip\":\"%s\",\"msg\":\"%s\"}%n",
-        Instant.now(), level, id, method, path, status, ms, ip, detail == null ? "" : detail.replace("\"", "'"));
+        "{\"ts\":\"%s\",\"level\":\"%s\",\"req\":%d,\"method\":\"%s\",\"path\":\"%s\",\"status\":%d,\"ms\":%d,\"msg\":\"%s\"}%n",
+        Instant.now(), level, id, method, path, status, ms, detail == null ? "" : detail.replace("\"", "'"));
   }
 
   private static Map<String, Double> query(String raw) {
@@ -376,6 +383,26 @@ public final class Hisaab {
     }
   }
 
+  /** Protect operational ingestion endpoints with a high-entropy bearer token. */
+  private static HttpHandler requireAdmin(HttpHandler inner) {
+    return x -> {
+      if (ADMIN_TOKEN.isBlank()) {
+        json(x, 404, "{\"error\":\"Administrative endpoints are disabled until HISAAB_ADMIN_TOKEN is configured\"}");
+        return;
+      }
+      String header = x.getRequestHeaders().getFirst("Authorization");
+      String supplied = header != null && header.startsWith("Bearer ") ? header.substring(7) : "";
+      boolean valid = MessageDigest.isEqual(
+          ADMIN_TOKEN.getBytes(StandardCharsets.UTF_8),
+          supplied.getBytes(StandardCharsets.UTF_8));
+      if (!valid) {
+        json(x, 401, "{\"error\":\"Administrator authentication required\"}");
+        return;
+      }
+      inner.handle(x);
+    };
+  }
+
   private static HttpHandler wrap(HttpHandler inner) {
     return x -> {
       long id = REQ_ID.getAndIncrement();
@@ -385,7 +412,7 @@ public final class Hisaab {
       String path = x.getRequestURI().getPath();
       int status = 200;
       try {
-        if (!allow(ip)) {
+        if (!path.equals("/healthz") && !path.equals("/readyz") && !allow(ip)) {
           json(x, 429, "{\"error\":\"Rate limit exceeded. Try again shortly.\"}");
           status = 429;
           return;
@@ -396,12 +423,12 @@ public final class Hisaab {
         try {
           json(x, 500, "{\"error\":\"Internal error\"}");
         } catch (IOException ignored) {}
-        log("ERROR", id, method, path, status, (System.nanoTime() - start) / 1_000_000L, ip, e.getClass().getSimpleName());
+        log("ERROR", id, method, path, status, (System.nanoTime() - start) / 1_000_000L, e.getClass().getSimpleName());
         return;
       } finally {
         long ms = (System.nanoTime() - start) / 1_000_000L;
         if (status != 500) {
-          log("INFO", id, method, path, status, ms, ip, null);
+          log("INFO", id, method, path, status, ms, null);
         }
       }
     };
@@ -420,17 +447,25 @@ public final class Hisaab {
     server.createContext("/api/data/snapshot", wrap(x -> proxyGet(x, "/data/snapshot")));
     server.createContext("/api/mitra", wrap(x -> proxyPost(x, "/mitra")));
     server.createContext("/api/report/pdf", wrap(Hisaab::proxyPdf));
-    server.createContext("/api/ingestion/status", wrap(x -> proxyGet(x, "/ingestion/status")));
-    server.createContext("/api/ingestion/candidates", wrap(x -> proxyGet(x, "/ingestion/candidates")));
-    server.createContext("/api/ingestion/monitor", wrap(x -> proxyPost(x, "/ingestion/monitor")));
-    server.createContext("/api/ingestion/fetch", wrap(x -> proxyPost(x, "/ingestion/fetch")));
-    server.createContext("/api/ingestion/approve", wrap(x -> proxyPost(x, "/ingestion/approve")));
+    server.createContext("/api/ingestion/status", wrap(requireAdmin(x -> proxyGet(x, "/ingestion/status"))));
+    server.createContext("/api/ingestion/candidates", wrap(requireAdmin(x -> proxyGet(x, "/ingestion/candidates"))));
+    server.createContext("/api/ingestion/monitor", wrap(requireAdmin(x -> proxyPost(x, "/ingestion/monitor"))));
+    server.createContext("/api/ingestion/fetch", wrap(requireAdmin(x -> proxyPost(x, "/ingestion/fetch"))));
+    server.createContext("/api/ingestion/approve", wrap(requireAdmin(x -> proxyPost(x, "/ingestion/approve"))));
     server.createContext("/api/llm/status", wrap(x -> proxyGet(x, "/llm/status")));
     server.createContext("/healthz", wrap(Hisaab::healthz));
     server.createContext("/readyz", wrap(Hisaab::readyz));
     server.createContext("/", wrap(Hisaab::staticFiles));
-    int threads = Math.max(4, Runtime.getRuntime().availableProcessors());
-    server.setExecutor(Executors.newFixedThreadPool(threads));
+    ThreadPoolExecutor executor = new ThreadPoolExecutor(
+        HTTP_THREADS, HTTP_THREADS, 0L, TimeUnit.MILLISECONDS,
+        new ArrayBlockingQueue<>(128),
+        runnable -> {
+          Thread thread = new Thread(runnable, "hisaab-http");
+          thread.setDaemon(true);
+          return thread;
+        },
+        new ThreadPoolExecutor.CallerRunsPolicy());
+    server.setExecutor(executor);
     server.start();
     READY = true;
     System.out.printf(Locale.ROOT,
