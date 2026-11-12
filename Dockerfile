@@ -5,7 +5,7 @@ COPY web/app.ts web/tsconfig.json ./web/
 RUN npm install --global typescript@5.7.3 && tsc -p web
 
 # Java gateway + Python simulation service.
-FROM eclipse-temurin:21-jdk-jammy
+FROM eclipse-temurin:22-jdk-jammy
 COPY requirements.txt /tmp/requirements.txt
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 python3-venv ca-certificates util-linux \
