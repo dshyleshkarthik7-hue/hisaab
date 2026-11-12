@@ -286,7 +286,7 @@ const translations = {
     "Take-home salary": "చేతికి వచ్చే జీతం",
     "BORROWING": "రుణం",
     "SALARY ESTIMATE": "జీతం అంచనా",
-    "Household-finance scenario simulator · Not personalised investment advice": "ప్రొడక్షన్ ఆర్థిక డిజిటల్ ట్విన్ · వ్యక్తిగతీకరించిన పెట్టుబడి సలహా కాదు"
+    "Household-finance scenario simulator · Not personalised investment advice": "కుటుంబ ఆర్థిక సన్నివేశ సిమ్యులేటర్ · వ్యక్తిగతీకరించిన పెట్టుబడి సలహా కాదు"
 };
 const tr = (value) => language === "te" ? (translations[value] || value) : value;
 function translateStatic() {
@@ -429,7 +429,7 @@ const i18nExtra = {
   "07 / WHY THIS NUMBER?": "07 / ఈ సంఖ్య ఎందుకు?",
   "Transparent calculation breakdown": "పారదర్శక లెక్క వివరణ",
   "Run a simulation or tax estimate to see formulas, inputs, assumptions and sources here.": "ఫార్ములాలు, ఇన్‌పుట్‌లు, అంచనాలు, మూలాలు చూడటానికి సిమ్యులేషన్ లేదా పన్ను అంచనా అమలు చేయండి.",
-  "Household-finance scenario simulator · No account connection · No personal data stored": "ప్రొడక్షన్ ఆర్థిక డిజిటల్ ట్విన్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు"
+  "Household-finance scenario simulator · No account connection · No personal data stored": "కుటుంబ ఆర్థిక సన్నివేశ సిమ్యులేటర్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు"
 };
 if (typeof translations !== "undefined") Object.assign(translations, i18nExtra);
 
