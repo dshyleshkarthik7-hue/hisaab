@@ -1,33 +1,52 @@
 # Hisaab security review pack
 
-## Scope
-Production gateway (Java) + simulation/tax/data/mitra engine (Python) + static web UI.
+## Controls implemented in this branch
 
-## Controls implemented
-- Security headers: CSP, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy, COOP, CORP
-- Per-IP rate limiting (default 60/min, `HISAAB_RATE_LIMIT`)
-- Request body limit 64 KB; Content-Length required
-- Static file allowlist; path traversal rejection
-- Engine bound to 127.0.0.1 only
-- Non-root Docker user
-- Structured JSON access logs
-- Optional LLM keys server-side only (`HISAAB_LLM_API_KEY`)
+- Security response headers: CSP, frame denial, nosniff, Referrer-Policy, Permissions-Policy, COOP and CORP.
+- Bounded request bodies (64 KB), finite numeric validation, upstream request timeouts and exact-length body reads.
+- Static file path normalization and real-path containment.
+- Python engine bound to loopback only; public gateway uses a bounded worker pool and queue.
+- Per-client in-memory rate limiting. On Render, the trusted Cloudflare `CF-Connecting-IP` header is used; X-Forwarded-For is deliberately not trusted.
+- All operational ingestion endpoints require a constant-time bearer-token comparison. If `HISAAB_ADMIN_TOKEN` is absent, those routes return 404.
+- Structured access logs escape untrusted request values and omit client IP addresses.
+- Container build requires bundled Telugu fonts, uses an isolated Python virtual environment, and drops to the unprivileged `hisaab` process after preparing persistent storage.
+- External LLM calls require explicit `HISAAB_LLM_ENABLED=true`; a provider key alone does not enable data egress.
 
-## Residual risks / operator actions
-1. Place TLS terminator and WAF (Cloudflare/Render) in front of the service.
-2. Run an independent penetration test before handling sensitive traffic.
-3. Set production rate limits appropriate to expected traffic.
-4. Do not expose `HISAAB_ENGINE_PORT` publicly.
-5. Prefer paid LLM tiers so prompts are not used for model training; never send identifiable KYC/documents to free tiers.
-6. Rotate API keys; store only in environment / secret manager.
+## Deployment requirements
+
+1. Terminate TLS at a trusted platform edge and verify HTTPS on the final custom domain.
+2. Keep `HISAAB_ENGINE_PORT` private. Never expose port 8081.
+3. Keep `HISAAB_ADMIN_TOKEN` in a secret manager. Generate at least 256 bits of entropy and rotate immediately if exposed.
+4. Keep LLM integration disabled unless user notice/consent and the provider's current data-retention/training terms have been reviewed.
+5. Keep `HISAAB_RATE_LIMIT` enabled. If running multiple instances, replace the process-local limiter with a shared distributed limiter before scaling.
+6. Back up the Render persistent disk if retaining ingestion candidates; verify restoration and retention/deletion procedures.
+7. Do not use application logs as an audit trail. They intentionally exclude request bodies, client IPs and financial inputs.
+8. Run independent penetration testing, dependency scanning and privacy review before collecting sensitive or identifiable user information.
+
+## Known residual risks
+
+- The gateway and engine are a compact single-process-per-container design, not a hardened multi-tenant financial platform.
+- In-memory rate limits do not coordinate across instances.
+- The admin bearer token is a shared operator credential; there are no named operator accounts, granular roles, audit approvals or MFA.
+- Ingestion candidates are untrusted external page snapshots. They do not automatically update tax rules; review the content and change the code/rule pack through a controlled release.
+- Optional LLM integration sends question/context to a third party when explicitly enabled.
+- No customer account, encryption-at-rest, consent-management, data export/deletion workflow or incident response tooling is implemented because the application is not designed to retain user financial profiles.
+- Financial-model assumptions and tax estimates require independent domain review. CI is not a legal, tax, investment, privacy or security certification.
 
 ## Automated checks
-- Unit tests: `python3 -m unittest tests.test_engine`
-- Smoke: `python3 tests/smoke.py` (health, EMI, tax, simulate, path traversal, mitra, data)
+
+- `python3 -m unittest discover -s tests -v`
+- `python3 -m compileall -q python tests`
+- TypeScript type check and browser JavaScript syntax check.
+- `python3 tests/smoke.py` (health/readiness, EMI, tax, simulation, PDF, path traversal, admin auth, Mitra and data snapshot).
+- Docker image build.
 
 ## Sign-off template
+
 | Reviewer | Date | Result | Notes |
 |---|---|---|---|
-| Security | | Pass / Fail | |
+| Application security | | Pass / Fail | |
 | Privacy | | Pass / Fail | |
-| Ops | | Pass / Fail | |
+| Financial methodology | | Pass / Fail | |
+| Tax rules | | Pass / Fail | |
+| Operations / recovery | | Pass / Fail | |
