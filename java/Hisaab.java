@@ -519,6 +519,6 @@ public final class Hisaab {
     READY = true;
     System.out.printf(Locale.ROOT,
         "{\"ts\":\"%s\",\"level\":\"INFO\",\"msg\":\"Hisaab gateway ready\",\"bind\":\"%s\",\"port\":%d,\"rate_limit\":%d}%n",
-        Instant.now(), BIND, httpPort, RATE_LIMIT_PER_MIN);
+        Instant.now(), BIND, httpPort, RATE_LIMIT_PER_MIN, GLOBAL_RATE_LIMIT_PER_MIN);
   }
 }
