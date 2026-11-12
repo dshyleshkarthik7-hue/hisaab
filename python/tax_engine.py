@@ -13,10 +13,10 @@ RULES_TY_2026_27_NEW = {
     "tax_year": "2026-27",
     "regime": "new",
     "source": "Income Tax Department",
-    "source_url": "https://wm.incometaxindia.gov.in/w/tax-rates-and-computation",
+    "source_url": "https://www.incometax.gov.in/iec/foportal/help/all-topics/e-filing-services/income-tax-calculator-um",
     "effective_from": "2026-04-01",
     "verified_on": "2026-11-12",
-    "status": "published",
+    "status": "illustrative",
     "slabs": [
         {"upto": 400_000, "rate": 0.0},
         {"upto": 800_000, "rate": 0.05},
@@ -30,8 +30,9 @@ RULES_TY_2026_27_NEW = {
     "rebate_87a_limit": 1_200_000,
     "cess": 0.04,
     "notes": [
-        "Resident individual assumed eligible for Section 87A under new regime.",
-        "Surcharge not applied (CTC paths capped below surcharge threshold in gateway).",
+        "Assumes a resident individual eligible for Section 87A; taxpayer-category and residential-status checks are not implemented.",
+        "Surcharge is not applied; this rule pack is restricted to taxable income up to ₹50 lakh.",
+        "Simplified estimate only; special-rate income, all deductions, credits and detailed payroll components are not modelled.",
         "Professional tax is user-supplied and treated as deductible for take-home estimate.",
     ],
 }
@@ -43,7 +44,7 @@ RULES_TY_2026_27_OLD = {
     "source_url": "https://wm.incometaxindia.gov.in/w/tax-rates-and-computation",
     "effective_from": "2026-04-01",
     "verified_on": "2026-11-12",
-    "status": "published",
+    "status": "illustrative",
     "slabs": [
         {"upto": 250_000, "rate": 0.0},
         {"upto": 500_000, "rate": 0.05},
@@ -54,7 +55,7 @@ RULES_TY_2026_27_OLD = {
     "rebate_87a_limit": 500_000,
     "cess": 0.04,
     "notes": [
-        "Old regime illustrative path. Resident individual eligibility for Section 87A is assumed; Chapter VI-A deductions are user-supplied aggregate.",
+        "Illustrative old-regime path. Assumes a resident non-senior individual eligible for Section 87A; age and residential-status checks are not implemented. Chapter VI-A deductions are user-supplied aggregate.",
         "Assumes a non-senior individual; age-specific slab differences are not modelled. Exact eligibility depends on individual facts; this is not a filing computation.",
     ],
 }
