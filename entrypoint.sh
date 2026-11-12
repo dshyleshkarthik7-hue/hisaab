@@ -3,4 +3,4 @@ set -eu
 DATA_DIR="${HISAAB_DATA_DIR:-/var/data}"
 mkdir -p "$DATA_DIR"
 chown -R hisaab:hisaab "$DATA_DIR"
-exec setpriv --reuid=hisaab --regid=hisaab --init-groups "$@"
+exec setpriv --reuid=hisaab --regid=hisaab --init-groups --bounding-set=-all --no-new-privs "$@"
