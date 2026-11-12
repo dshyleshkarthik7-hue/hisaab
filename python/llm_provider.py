@@ -10,13 +10,14 @@ import os
 import urllib.request
 from typing import Any
 
+ENABLED = os.environ.get("HISAAB_LLM_ENABLED", "false").strip().lower() in ("1", "true", "yes")
 PROVIDER = os.environ.get("HISAAB_LLM_PROVIDER", "").strip().lower()  # gemini | groq | none
 API_KEY = os.environ.get("HISAAB_LLM_API_KEY", "").strip()
 MODEL = os.environ.get("HISAAB_LLM_MODEL", "").strip()
 
 
 def available() -> bool:
-    return bool(PROVIDER and API_KEY and PROVIDER in ("gemini", "groq"))
+    return bool(ENABLED and PROVIDER and API_KEY and PROVIDER in ("gemini", "groq"))
 
 
 def _system_prompt() -> str:
