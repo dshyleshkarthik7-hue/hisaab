@@ -26,7 +26,7 @@ Install Python dependencies with `python3 -m pip install -r requirements.txt` an
 
 ## What is included
 
-- Monthly cash-flow-aware Monte Carlo engine (standard library only).
+- Monthly cash-flow-aware Monte Carlo engine (Python standard-library simulation core); ReportLab is used by the PDF-report service.
 - Annual category-specific inflation assumptions for general, education, medical and home goals.
 - Monthly return variation, job-loss periods and medical-event scenarios.
 - Goal-level success odds, all-goals success rate, depletion odds, goal failure rates and paired shock-removal counterfactuals (model-conditional, not proof of real-world causation) and 10th/50th/90th percentile corpus bands.
