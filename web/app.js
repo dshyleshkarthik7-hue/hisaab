@@ -91,12 +91,12 @@ function drawFan(fan, samplePaths = []) {
     ctx.closePath();
     ctx.fillStyle = css("--chart-band");
     ctx.fill();
-    // Sampled household trajectories are drawn beneath the median.
     for (const path of samplePaths) {
-        if (!Array.isArray(path.values)) continue;
+        if (!Array.isArray(path.values))
+            continue;
         ctx.beginPath();
         path.values.forEach((v, i) => ctx[i ? "lineTo" : "moveTo"](px(i), py(v)));
-        ctx.strokeStyle = path.ok ? "rgba(40, 150, 112, 0.28)" : "rgba(217, 104, 82, 0.34)";
+        ctx.strokeStyle = path.ok ? "rgba(40,150,112,0.28)" : "rgba(217,104,82,0.34)";
         ctx.lineWidth = path.label === "worst_surviving" ? 2 : 1.15;
         ctx.stroke();
     }
@@ -122,10 +122,12 @@ function show(r) {
     const diagnostic = r.diagnostics || {};
     const weakest = diagnostic.weakest_goal;
     const diagNode = $("diagnostics");
-    if (diagNode) diagNode.textContent = weakest ? `Most fragile goal: ${weakest.name} (${Math.round(weakest.odds * 100)}% funded) · Failed lives that also experienced a shock: ${Math.round((diagnostic.failed_lives_with_shock_share || 0) * 100)}%` : "";
+    if (diagNode)
+        diagNode.textContent = weakest ? "Most fragile goal: " + weakest.name + " (" + Math.round(weakest.odds * 100) + "% funded) · Failed lives that also experienced a shock: " + Math.round((diagnostic.failed_lives_with_shock_share || 0) * 100) + "%" : "";
     const shockedPath = (r.sample_paths || []).find(path => path.shock_events && path.shock_events.length);
     const chartNote = $("chartNote");
-    if (chartNote) chartNote.textContent = `25 sampled household paths · Green: all goals funded · Coral: at least one goal missed${shockedPath ? " · Example shock: " + shockedPath.shock_events.map(event => event.kind + " at month " + event.month).join(", ") : ""}`;
+    if (chartNote)
+        chartNote.textContent = "25 sampled household paths · Green: all goals funded · Coral: at least one goal missed" + (shockedPath ? " · Example shock: " + shockedPath.shock_events.map(event => event.kind + " at month " + event.month).join(", ") : "");
     const odds = $("odds");
     odds.replaceChildren();
     for (const g of r.goals) {
@@ -395,19 +397,36 @@ function reportHtml() {
 function escapeHtml(value) { return value.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 $("addEvent").addEventListener("click", () => addEventRow({ label: language === "te" ? "కొత్త సంఘటన" : "New life event", year: 3, kind: "income_change", amount: 15000 }));
 $("langToggle").addEventListener("click", () => { language = language === "en" ? "te" : "en"; translateStatic(); });
-$("pdfReport").addEventListener("click", () => {
+$("pdfReport").addEventListener("click", async (ev) => {
     if (!lastInput || !lastResult) {
         alert(language === "te" ? "ముందుగా సిమ్యులేషన్‌ను అమలు చేయండి." : "Run a simulation before creating your report.");
         return;
     }
-    const w = window.open("", "_blank");
-    if (!w) {
-        alert(language === "te" ? "పాప్-అప్‌ను అనుమతించి మళ్లీ ప్రయత్నించండి." : "Allow the report pop-up and try again.");
-        return;
+    ev.preventDefault();
+    try {
+        const res = await fetch("/api/report/pdf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lang: language, inputs: lastInput, result: lastResult }) });
+        if (!res.ok)
+            throw new Error("PDF generation failed");
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = language === "te" ? "hisaab-nivadika.pdf" : "hisaab-report.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
     }
-    w.document.open();
-    w.document.write(reportHtml());
-    w.document.close();
+    catch {
+        const w = window.open("", "_blank");
+        if (w) {
+            w.document.open();
+            w.document.write(reportHtml());
+            w.document.close();
+        }
+        else
+            alert(language === "te" ? "పాప్-అప్‌ను అనుమతించి మళ్లీ ప్రయత్నించండి." : "PDF service unavailable; allow the print window and retry.");
+    }
 });
 const originalShow = show;
 show = (result) => { originalShow(result); lastResult = result; };
@@ -415,252 +434,261 @@ const originalSubmit = $("sim").onsubmit;
 $("sim").addEventListener("submit", () => { const f = $("sim"); const d = new FormData(f); const n = (k) => Number(d.get(k)); lastInput = { years: n("years"), savings: n("savings"), income: n("income"), expense: n("expense"), sip: n("sip"), ret: n("ret"), vol: n("vol"), income_growth: n("income_growth"), medical_shock: n("medical_shock"), seed: n("seed"), shocks: d.has("shocks"), goals: readGoals(), events: readEvents() }; });
 addEventRow({ label: "Career change / salary increase", year: 3, kind: "income_change", amount: 15000 });
 translateStatic();
-
-/* Production modules: official data, Mitra, Why This Number */
+// ——— Production: official data, Mitra, Why This Number, complete i18n ———
 const i18nExtra = {
-  "05 / OFFICIAL CONTEXT": "05 / అధికారిక సందర్భం",
-  "Reference links — not live data": "సూచన లింకులు — ప్రత్యక్ష డేటా కాదు",
-  "Official links": "అధికారిక లింకులు",
-  "No live rate feed is connected. Values are deliberately not shown as current; verify directly with the linked official source.": "ప్రత్యక్ష రేట్ల ఫీడ్ లేదు. ప్రస్తుత రేట్లుగా విలువలు చూపబడవు; అధికారిక మూలంలో నేరుగా నిర్ధారించండి.",
-  "06 / HISAAB MITRA": "06 / హిసాబ్ మిత్ర",
-  "Your bilingual financial guide": "మీ ద్విభాషా ఆర్థిక మార్గదర్శి",
-  "Mitra explains Hisaab's illustrative calculations and links to official rules. It does not invent rates or give personalised investment advice.": "మిత్ర Hisaab ఉదాహరణాత్మక లెక్కలు మరియు అధికారిక నియమాల లింకులను వివరిస్తుంది. రేట్లు కల్పించదు; వ్యక్తిగతీకరించిన పెట్టుబడి సలహా ఇవ్వదు.",
-  "Ask Mitra": "మిత్రను అడగండి",
-  "07 / WHY THIS NUMBER?": "07 / ఈ సంఖ్య ఎందుకు?",
-  "Transparent calculation breakdown": "పారదర్శక లెక్క వివరణ",
-  "Run a simulation or tax estimate to see formulas, inputs, assumptions and sources here.": "ఫార్ములాలు, ఇన్‌పుట్‌లు, అంచనాలు, మూలాలు చూడటానికి సిమ్యులేషన్ లేదా పన్ను అంచనా అమలు చేయండి.",
-  "Household-finance scenario simulator · No account connection · No personal data stored": "కుటుంబ ఆర్థిక సన్నివేశ సిమ్యులేటర్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు"
+    "05 / OFFICIAL CONTEXT": "05 / అధికారిక సందర్భం",
+    "Reference links — not live data": "సూచన లింకులు — ప్రత్యక్ష డేటా కాదు",
+    "Official links": "అధికారిక లింకులు",
+    "No live rate feed is connected. Values are deliberately not shown as current; verify directly with the linked official source.": "ప్రత్యక్ష రేట్ల ఫీడ్ లేదు. ప్రస్తుత రేట్లుగా విలువలు చూపబడవు; అధికారిక మూలంలో నేరుగా నిర్ధారించండి.",
+    "06 / HISAAB MITRA": "06 / హిసాబ్ మిత్ర",
+    "Your bilingual financial guide": "మీ ద్విభాషా ఆర్థిక మార్గదర్శి",
+    "Mitra explains Hisaab's illustrative calculations and links to official rules. It does not invent rates or give personalised investment advice.": "మిత్ర Hisaab ఉదాహరణాత్మక లెక్కలు మరియు అధికారిక నియమాల లింకులను వివరిస్తుంది. రేట్లు కల్పించదు; వ్యక్తిగతీకరించిన పెట్టుబడి సలహా ఇవ్వదు.",
+    "Ask Mitra": "మిత్రను అడగండి",
+    "07 / WHY THIS NUMBER?": "07 / ఈ సంఖ్య ఎందుకు?",
+    "Transparent calculation breakdown": "పారదర్శక లెక్క వివరణ",
+    "Run a simulation or tax estimate to see formulas, inputs, assumptions and sources here.": "ఫార్ములాలు, ఇన్‌పుట్‌లు, అంచనాలు, మూలాలు చూడటానికి సిమ్యులేషన్ లేదా పన్ను అంచనా అమలు చేయండి.",
+    "Effective": "అమలు",
+    "Verified": "ధృవీకరణ",
+    "Source": "మూలం",
+    "Household-finance scenario simulator · No account connection · No personal data stored": "కుటుంబ ఆర్థిక సన్నివేశ సిమ్యులేటర్ · ఖాతా అనుసంధానం లేదు · వ్యక్తిగత డేటా నిల్వ చేయబడదు",
 };
-if (typeof translations !== "undefined") Object.assign(translations, i18nExtra);
-
-const mitraSuggestionsEn = ["Explain the latest income tax rules","Old tax regime vs new tax regime","What is an SIP?","Why am I not reaching my goal?","What is the RBI repo rate?"];
-const mitraSuggestionsTe = ["తాజా ఆదాయపు పన్ను నియమాలు వివరించండి","పాత పాలన vs కొత్త పాలన","SIP అంటే ఏమిటి?","నా లక్ష్యం ఎందుకు చేరడం లేదు?","RBI రెపో రేటు ఎంత?"];
-
+Object.assign(translations, i18nExtra);
+const mitraSuggestionsEn = [
+    "Explain the latest income tax rules",
+    "Old tax regime vs new tax regime",
+    "What is an SIP?",
+    "Why am I not reaching my goal?",
+    "What is the RBI repo rate?",
+];
+const mitraSuggestionsTe = [
+    "తాజా ఆదాయపు పన్ను నియమాలు వివరించండి",
+    "పాత పాలన vs కొత్త పాలన",
+    "SIP అంటే ఏమిటి?",
+    "నా లక్ష్యం ఎందుకు చేరడం లేదు?",
+    "RBI రెపో రేటు ఎంత?",
+];
 function renderMitraSuggestions() {
-  const box = document.getElementById("mitraSuggestions");
-  if (!box) return;
-  box.innerHTML = "";
-  (language === "te" ? mitraSuggestionsTe : mitraSuggestionsEn).forEach((text) => {
-    const b = document.createElement("button");
-    b.className = "chip"; b.type = "button"; b.textContent = text;
-    b.addEventListener("click", () => {
-      const input = document.getElementById("mitraInput");
-      if (input) input.value = text;
-      askMitra(text);
-    });
-    box.append(b);
-  });
-}
-
-function appendMitraBubble(role, text, sources) {
-  const chat = document.getElementById("mitraChat");
-  if (!chat) return;
-  const bubble = document.createElement("div");
-  bubble.className = "mitra-bubble " + role;
-  bubble.textContent = text;
-  chat.append(bubble);
-  if (sources && sources.length) {
-    const src = document.createElement("div");
-    src.className = "mitra-sources";
-    src.textContent = (language === "te" ? "మూలాలు: " : "Sources: ") + sources.map(s => s.name).join(" · ");
-    chat.append(src);
-  }
-  chat.scrollTop = chat.scrollHeight;
-}
-
-async function askMitra(question) {
-  const q = (question || "").trim();
-  if (!q) return;
-  appendMitraBubble("user", q);
-  try {
-    const ctx = {};
-    if (typeof lastResult !== "undefined" && lastResult) {
-      ctx.inputs = lastInput;
-      ctx.simulation = { score: lastResult.score, depletion_odds: lastResult.depletion_odds, diagnostics: lastResult.diagnostics, shock_counterfactuals: lastResult.nudge && lastResult.nudge.shock_counterfactuals, target_sip: lastResult.nudge && lastResult.nudge.target_sip };
-    }
-    const res = await fetch("/api/mitra", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: q, context: ctx })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Mitra unavailable");
-    appendMitraBubble("mitra", data.reply, data.sources);
-    if (data.calculations) showWhyPanel({
-      title: language === "te" ? "మిత్ర లెక్క / నియమాలు" : "Mitra calculation / rules",
-      formula: "Hisaab Tax Intelligence + verified rule packs",
-      inputs: { question: q },
-      assumptions: data.disclaimer || "",
-      sources: (data.sources || []).map(s => s.name + " — " + s.url),
-      breakdown: data.calculations
-    });
-  } catch (e) {
-    appendMitraBubble("mitra", language === "te"
-      ? "క్షమించండి, ప్రస్తుతం సమాధానం ఇవ్వలేకపోయాను."
-      : "Sorry — I could not answer right now.");
-  }
-}
-
-function showWhyPanel(payload) {
-  const body = document.getElementById("whyBody");
-  if (!body) return;
-  body.innerHTML = "";
-  const h = document.createElement("h3"); h.textContent = payload.title; body.append(h);
-  const f = document.createElement("p"); f.textContent = (language === "te" ? "ఫార్ములా: " : "Formula: ") + payload.formula; body.append(f);
-  const pre = document.createElement("pre"); pre.className = "why-pre"; pre.textContent = JSON.stringify(payload.inputs, null, 2); body.append(pre);
-  const a = document.createElement("p"); a.textContent = payload.assumptions || ""; body.append(a);
-  if (payload.sources && payload.sources.length) {
-    const s = document.createElement("p"); s.className = "tiny-note"; s.textContent = payload.sources.join(" · "); body.append(s);
-  }
-  if (payload.breakdown) {
-    const b = document.createElement("pre"); b.className = "why-pre"; b.textContent = JSON.stringify(payload.breakdown, null, 2); body.append(b);
-  }
-}
-
-async function loadOfficialData() {
-  const box = document.getElementById("dataCards");
-  if (!box) return;
-  try {
-    const res = await fetch("/api/data/snapshot");
-    const data = await res.json();
-    if (!res.ok) throw new Error("data");
+    const box = document.getElementById("mitraSuggestions");
+    if (!box)
+        return;
     box.innerHTML = "";
-    (data.items || []).forEach((item) => {
-      const card = document.createElement("article");
-      card.className = "data-card";
-      const h = document.createElement("h4"); h.textContent = item.title; card.append(h);
-      const v = document.createElement("div"); v.className = "data-value"; v.textContent = item.value; card.append(v);
-      const p = document.createElement("p"); p.className = "tiny-note";
-      p.textContent = (language === "te" ? "మూలం" : "Source") + ": " + item.source + " · " +
-        (language === "te" ? "ప్రత్యక్ష ధృవీకరణ లేదు" : "Not live-verified");
-      card.append(p);
-      if (item.notes) {
-        const note = document.createElement("p"); note.className = "tiny-note";
-        note.textContent = item.notes; card.append(note);
-      }
-      box.append(card);
+    const list = language === "te" ? mitraSuggestionsTe : mitraSuggestionsEn;
+    list.forEach((text) => {
+        const b = el("button", "chip", text);
+        b.type = "button";
+        b.addEventListener("click", () => {
+            const input = document.getElementById("mitraInput");
+            input.value = text;
+            void askMitra(text);
+        });
+        box.append(b);
     });
-  } catch {
-    box.textContent = language === "te" ? "డేటా అందుబాటులో లేదు." : "Official data unavailable.";
-  }
 }
-
-const mitraFormEl = document.getElementById("mitraForm");
-if (mitraFormEl) {
-  mitraFormEl.addEventListener("submit", (ev) => {
-    ev.preventDefault();
-    const input = document.getElementById("mitraInput");
-    askMitra(input ? input.value : "");
-    if (input) input.value = "";
-  });
+function appendMitraBubble(role, text, sources) {
+    const chat = document.getElementById("mitraChat");
+    if (!chat)
+        return;
+    const bubble = el("div", "mitra-bubble " + role);
+    bubble.textContent = text;
+    chat.append(bubble);
+    if (sources && sources.length) {
+        const src = el("div", "mitra-sources");
+        src.textContent = (language === "te" ? "మూలాలు: " : "Sources: ") + sources.map(s => s.name).join(" · ");
+        chat.append(src);
+    }
+    chat.scrollTop = chat.scrollHeight;
 }
-
-document.getElementById("langToggle")?.addEventListener("click", () => {
-  setTimeout(() => { renderMitraSuggestions(); loadOfficialData(); }, 0);
+async function askMitra(question) {
+    const q = question.trim();
+    if (!q)
+        return;
+    appendMitraBubble("user", q);
+    try {
+        const ctx = {};
+        if (lastResult) {
+            ctx.inputs = lastInput;
+            ctx.simulation = { score: lastResult.score, depletion_odds: lastResult.depletion_odds, diagnostics: lastResult.diagnostics, shock_counterfactuals: lastResult.nudge && lastResult.nudge.shock_counterfactuals, target_sip: lastResult.nudge && lastResult.nudge.target_sip };
+        }
+        const res = await fetch("/api/mitra", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: q, context: ctx }),
+        });
+        const data = await res.json();
+        if (!res.ok)
+            throw new Error(data.error || "Mitra unavailable");
+        appendMitraBubble("mitra", data.reply, data.sources);
+        if (data.calculations) {
+            showWhy({
+                title: language === "te" ? "మిత్ర లెక్క / నియమాలు" : "Mitra calculation / rules",
+                formula: "Hisaab Tax Intelligence + verified rule packs (not model-invented)",
+                inputs: { question: q },
+                assumptions: data.disclaimer,
+                sources: (data.sources || []).map((s) => s.name + " — " + s.url),
+                breakdown: data.calculations,
+            });
+        }
+    }
+    catch (e) {
+        appendMitraBubble("mitra", language === "te"
+            ? "క్షమించండి, ప్రస్తుతం సమాధానం ఇవ్వలేకపోయాను. మళ్లీ ప్రయత్నించండి."
+            : "Sorry — I could not answer right now. Please try again.");
+    }
+}
+function showWhy(payload) {
+    const body = document.getElementById("whyBody");
+    if (!body)
+        return;
+    body.innerHTML = "";
+    body.append(el("h3", "", payload.title));
+    body.append(el("p", "", (language === "te" ? "ఫార్ములా: " : "Formula: ") + payload.formula));
+    const pre = el("pre", "why-pre", JSON.stringify(payload.inputs, null, 2));
+    body.append(pre);
+    body.append(el("p", "", payload.assumptions));
+    if (payload.sources.length) {
+        body.append(el("p", "tiny-note", payload.sources.join(" · ")));
+    }
+    if (payload.breakdown) {
+        body.append(el("pre", "why-pre", JSON.stringify(payload.breakdown, null, 2)));
+    }
+}
+async function loadOfficialData() {
+    const box = document.getElementById("dataCards");
+    if (!box)
+        return;
+    try {
+        const res = await fetch("/api/data/snapshot");
+        const data = await res.json();
+        if (!res.ok)
+            throw new Error("data");
+        box.innerHTML = "";
+        (data.items || []).forEach((item) => {
+            const card = el("article", "data-card");
+            card.append(el("h4", "", item.title));
+            card.append(el("div", "data-value", item.value));
+            card.append(el("p", "tiny-note", `${language === "te" ? "మూలం" : "Source"}: ${item.source} · ` +
+                `${language === "te" ? "ప్రత్యక్ష ధృవీకరణ లేదు" : "Not live-verified"}`));
+            if (item.notes)
+                card.append(el("p", "tiny-note", item.notes));
+            box.append(card);
+        });
+    }
+    catch {
+        box.textContent = language === "te" ? "డేటా అందుబాటులో లేదు." : "Official data unavailable.";
+    }
+}
+// Mitra form
+const mitraForm = document.getElementById("mitraForm");
+if (mitraForm) {
+    mitraForm.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        const input = document.getElementById("mitraInput");
+        void askMitra(input.value);
+        input.value = "";
+    });
+}
+// Enhance language toggle to refresh dynamic panels
+const prevLangClick = $("langToggle").onclick;
+$("langToggle").addEventListener("click", () => {
+    renderMitraSuggestions();
+    void loadOfficialData();
+    // re-apply static translations for new keys
+    document.querySelectorAll("[data-i18n]").forEach((node) => {
+        const key = node.getAttribute("data-i18n") || "";
+        // handled via text content mapping in translateStatic for known strings
+    });
 });
-
-const _origShow = typeof show === "function" ? show : null;
-if (_origShow) {
-  show = function(result) {
-    _origShow(result);
+// After simulation, populate Why This Number for score
+const prevShowRef = show;
+show = (result) => {
+    prevShowRef(result);
     lastResult = result;
-    showWhyPanel({
-      title: language === "te" ? "అన్ని లక్ష్యాల విజయ సంభావ్యత" : "All-goals success probability",
-      formula: "success_trials / total_trials (monthly cash-flow Monte Carlo)",
-      inputs: lastInput || {},
-      assumptions: language === "te"
-        ? "నెలవారీ రాబడి లాగ్‌నార్మల్; వర్గాల వారీ ద్రవ్యోల్బణం; SIP మిగులుకు పరిమితం."
-        : "Lognormal monthly returns; category inflation; SIP capped by surplus.",
-      sources: ["Hisaab financial engine", "docs/MODEL.md"],
-      breakdown: { score: result.score, depletion_odds: result.depletion_odds, trials: result.trials, seed: result.seed, goals: result.goals }
+    showWhy({
+        title: language === "te" ? "అన్ని లక్ష్యాల విజయ సంభావ్యత" : "All-goals success probability",
+        formula: "success_trials / total_trials (monthly cash-flow Monte Carlo)",
+        inputs: lastInput || {},
+        assumptions: language === "te"
+            ? "నెలవారీ రాబడి లాగ్‌నార్మల్; వర్గాల వారీ ద్రవ్యోల్బణం; SIP మిగులుకు పరిమితం."
+            : "Lognormal monthly returns; category inflation; SIP capped by surplus.",
+        sources: ["Hisaab financial engine", "docs/MODEL.md"],
+        breakdown: {
+            score: result.score,
+            depletion_odds: result.depletion_odds,
+            trials: result.trials,
+            seed: result.seed,
+            goals: result.goals,
+        },
     });
-  };
-}
-
+};
 renderMitraSuggestions();
-loadOfficialData();
-
-
-/* Server-side PDF download with embedded Telugu font */
-(function() {
-  const btn = document.getElementById("pdfReport");
-  if (!btn) return;
-  btn.addEventListener("click", async (ev) => {
-    if (typeof lastInput === "undefined" || !lastInput || typeof lastResult === "undefined" || !lastResult) {
-      return; // existing alert handler may also fire
-    }
-    ev.stopImmediatePropagation();
-    ev.preventDefault();
-    try {
-      const res = await fetch("/api/report/pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lang: language, inputs: lastInput, result: lastResult })
-      });
-      if (!res.ok) throw new Error("PDF failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = language === "te" ? "hisaab-nivadika.pdf" : "hisaab-report.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      // fall through to existing print dialog behavior
-    }
-  }, true); // capture so we run early
-})();
-
-
-// Shareable, reproducible scenario links and one-click household presets.
+void loadOfficialData();
+// Shareable reproducible scenarios and editable illustrative quick-start examples.
 (function () {
-  const form = document.getElementById("sim");
-  const field = (name) => form && form.elements.namedItem(name);
-  const personas = {
-    grad: {years:20,savings:100000,income:55000,expense:28000,sip:12000,ret:10,vol:18,income_growth:8,medical_shock:250000,goals:[{name:"Higher education",at:6,cost:800000,kind:"education",flex:true}]},
-    family: {years:20,savings:1200000,income:160000,expense:85000,sip:40000,ret:10,vol:16,income_growth:8,medical_shock:600000,goals:[{name:"Child education",at:12,cost:3000000,kind:"education",flex:false},{name:"Home upgrade",at:8,cost:1800000,kind:"home",flex:true}]},
-    single: {years:18,savings:700000,income:90000,expense:65000,sip:18000,ret:9,vol:20,income_growth:6,medical_shock:800000,goals:[{name:"Family safety reserve",at:5,cost:1200000,kind:"medical",flex:false},{name:"Retirement bridge",at:18,cost:4500000,kind:"general",flex:false}]}
-  };
-  function applyState(state) {
-    if (!form || !state || typeof state !== "object") return;
-    ["years","savings","income","expense","sip","ret","vol","income_growth","medical_shock","seed"].forEach(k => {
-      if (state[k] !== undefined && field(k)) field(k).value = state[k];
+    const form = document.getElementById("sim");
+    const getField = (name) => {
+        const item = form?.elements.namedItem(name);
+        return item instanceof HTMLInputElement || item instanceof HTMLSelectElement ? item : null;
+    };
+    const personas = {
+        grad: { years: 20, savings: 100000, income: 55000, expense: 28000, sip: 12000, ret: 10, vol: 18, income_growth: 8, medical_shock: 250000, goals: [{ name: "Higher education", at: 6, cost: 800000, kind: "education", flex: true }] },
+        family: { years: 20, savings: 1200000, income: 160000, expense: 85000, sip: 40000, ret: 10, vol: 16, income_growth: 8, medical_shock: 600000, goals: [{ name: "Child education", at: 12, cost: 3000000, kind: "education", flex: false }, { name: "Home upgrade", at: 8, cost: 1800000, kind: "home", flex: true }] },
+        single: { years: 18, savings: 700000, income: 90000, expense: 65000, sip: 18000, ret: 9, vol: 20, income_growth: 6, medical_shock: 800000, goals: [{ name: "Family safety reserve", at: 5, cost: 1200000, kind: "medical", flex: false }, { name: "Retirement bridge", at: 18, cost: 4500000, kind: "general", flex: false }] }
+    };
+    const applyState = (state) => {
+        if (!form || !state || typeof state !== "object")
+            return;
+        ["years", "savings", "income", "expense", "sip", "ret", "vol", "income_growth", "medical_shock", "seed"].forEach(k => {
+            const input = getField(k);
+            if (state[k] !== undefined && input)
+                input.value = String(state[k]);
+        });
+        const shocks = getField("shocks");
+        if (shocks instanceof HTMLInputElement && state.shocks !== undefined)
+            shocks.checked = !!state.shocks;
+        if (Array.isArray(state.goals) && state.goals.length) {
+            $("goals").replaceChildren();
+            state.goals.slice(0, 12).forEach((g) => goalRow(g));
+        }
+        if (Array.isArray(state.events)) {
+            $("events").replaceChildren();
+            state.events.slice(0, 20).forEach((e) => addEventRow(e));
+        }
+    };
+    document.querySelectorAll("[data-persona]").forEach(button => {
+        button.addEventListener("click", () => {
+            const sample = personas[button.dataset.persona || ""];
+            if (!sample)
+                return;
+            applyState({ ...sample, seed: 20261112, shocks: true, events: [] });
+            form?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
     });
-    if (field("shocks") && state.shocks !== undefined) field("shocks").checked = !!state.shocks;
-    if (Array.isArray(state.goals) && state.goals.length) {
-      document.getElementById("goals").replaceChildren();
-      state.goals.slice(0,12).forEach(goal => goalRow(goal));
+    const share = document.getElementById("shareScenario");
+    if (share)
+        share.addEventListener("click", async () => {
+            if (!lastInput) {
+                alert("Run a simulation before sharing.");
+                return;
+            }
+            const payload = { ...lastInput, seed: lastInput.seed ?? Number(getField("seed")?.value), shocks: lastInput.shocks ?? getField("shocks")?.checked };
+            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+            const url = location.origin + location.pathname + "#s=" + encoded;
+            history.replaceState(null, "", url);
+            try {
+                await navigator.clipboard.writeText(url);
+                share.textContent = "Link copied";
+            }
+            catch {
+                share.textContent = "Link ready in address bar";
+            }
+        });
+    if (location.hash.startsWith("#s=")) {
+        try {
+            let encoded = location.hash.slice(3).replace(/-/g, "+").replace(/_/g, "/");
+            encoded += "=".repeat((4 - encoded.length % 4) % 4);
+            applyState(JSON.parse(decodeURIComponent(escape(atob(encoded)))));
+            form?.requestSubmit();
+        }
+        catch { /* Ignore malformed or manually edited share links. */ }
     }
-    if (Array.isArray(state.events)) {
-      document.getElementById("events").replaceChildren();
-      state.events.slice(0,20).forEach(event => addEventRow(event));
-    }
-  }
-  document.querySelectorAll("[data-persona]").forEach(button => {
-    button.addEventListener("click", () => {
-      applyState({...personas[button.dataset.persona],seed:20261112,shocks:true,events:[]});
-      form.scrollIntoView({behavior:"smooth",block:"start"});
-    });
-  });
-  const share = document.getElementById("shareScenario");
-  if (share) share.addEventListener("click", async () => {
-    if (!lastInput) { alert("Run a simulation before sharing."); return; }
-    const payload = {...lastInput, seed:lastInput.seed ?? Number(field("seed").value), shocks:lastInput.shocks ?? field("shocks").checked};
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
-    const url = location.origin + location.pathname + "#s=" + encoded;
-    history.replaceState(null,"",url);
-    try { await navigator.clipboard.writeText(url); share.textContent = "Link copied"; }
-    catch (_) { share.textContent = "Link ready in address bar"; }
-  });
-  if (location.hash.startsWith("#s=")) {
-    try {
-      let encoded=location.hash.slice(3).replace(/-/g,"+").replace(/_/g,"/");
-      encoded += "=".repeat((4-encoded.length%4)%4);
-      const state=JSON.parse(decodeURIComponent(escape(atob(encoded))));
-      applyState(state);
-      if (form) form.requestSubmit();
-    } catch (_) { /* Ignore malformed or manually edited shared links. */ }
-  }
 })();
