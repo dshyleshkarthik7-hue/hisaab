@@ -100,6 +100,8 @@ def compute_tax(
     """
     if isinstance(taxable_income, bool) or not isinstance(taxable_income, (int, float)) or not math.isfinite(taxable_income) or taxable_income < 0:
         raise ValueError("taxable_income must be a non-negative finite number")
+    if taxable_income > 5_000_000:
+        raise ValueError("This illustrative rule pack excludes surcharge; taxable income is limited to ₹50 lakh.")
     if isinstance(chapter_via_deductions, bool) or not isinstance(chapter_via_deductions, (int, float)) or not math.isfinite(chapter_via_deductions) or chapter_via_deductions < 0:
         raise ValueError("chapter_via_deductions must be a non-negative finite number")
     rules = get_rules(tax_year, regime)
@@ -166,6 +168,8 @@ def compute_tax(
 
 def compare_regimes(gross_taxable_before_sd: float, chapter_via: float = 0.0) -> dict[str, Any]:
     """Compare new vs old regime for the same starting income."""
+    if isinstance(gross_taxable_before_sd, bool) or not isinstance(gross_taxable_before_sd, (int, float)) or not math.isfinite(gross_taxable_before_sd) or gross_taxable_before_sd < 0 or gross_taxable_before_sd > 5_000_000:
+        raise ValueError("This illustrative comparison excludes surcharge and is limited to income up to ₹50 lakh.")
     new_rules = get_rules("2026-27", "new")
     old_rules = get_rules("2026-27", "old")
     new_taxable = max(0.0, gross_taxable_before_sd - new_rules["standard_deduction"])
