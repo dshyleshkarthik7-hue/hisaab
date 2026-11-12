@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
-import { simulate, nudge, type SimulationResult } from "../src/core/simulation.js";
+import { simulate, nudge } from "../src/core/simulation.js";
+import { computeTax, compareRegimes } from "../src/core/tax.js";
 const fixture=JSON.parse(readFileSync(new URL("./python-fixture.json",import.meta.url),"utf8"));
 const assert=(condition:boolean,message:string)=>{if(!condition)throw new Error(message);};
 function compare(actual:any,expected:any,path="root"){
