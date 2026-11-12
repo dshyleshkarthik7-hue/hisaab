@@ -38,6 +38,10 @@ jobs:
           PR_BRANCH: ${{ github.head_ref }}
         run: |
           if ! git diff --quiet -- web/app.js; then
+            git stash push -m "compiled browser bundle" -- web/app.js
+            git fetch origin "${PR_BRANCH}"
+            git checkout -B "${PR_BRANCH}" FETCH_HEAD
+            git stash pop
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add web/app.js
