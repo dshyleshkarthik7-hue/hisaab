@@ -1,0 +1,38 @@
+name: Cloudflare Pages artifact
+
+on:
+  pull_request:
+  push:
+    branches: [main, "migration/cloudflare-full-static"]
+
+permissions:
+  contents: read
+
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install static build toolchain
+        working-directory: web
+        run: npm install --ignore-scripts
+      - name: Build browser application
+        working-directory: web
+        run: npm run build
+      - name: Validate Pages entrypoint and headers
+        run: |
+          test -s web/index.html
+          test -s web/_headers
+          test -s web/_redirects
+          test -s wrangler.toml
+      - name: Upload Pages-ready static directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: hisaab-cloudflare-pages
+          path: web/
+          if-no-files-found: error
+          retention-days: 7
