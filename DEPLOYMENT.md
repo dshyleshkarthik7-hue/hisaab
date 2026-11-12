@@ -128,7 +128,7 @@ No Cloudflare credentials are stored in this repository. No production deploymen
 
 ### PDF behavior
 
-The browser-only build opens a print-ready report and waits for the bundled Hind Guntur regular and bold fonts before opening the browser print dialog. Choose **Save as PDF** in that dialog. This uses the browser's Telugu text shaping; it is not a server-generated PDF download endpoint. Verify Telugu glyphs, page breaks and selectable text on supported browsers before production sign-off.
+The browser-only build generates and downloads an A4 PDF directly with PDFMake. It embeds the bundled Hind Guntur regular and bold fonts through same-origin font URLs and includes simulation summary, inputs, goals, scenario comparisons, target-SIP analysis, paired shock counterfactuals and annual corpus bands. CI checks Telugu glyph coverage in both font files. Verify glyph shaping, page breaks and selectable text on supported browsers before production sign-off.
 
 ### Static-build scope
 
