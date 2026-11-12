@@ -22,6 +22,7 @@ try{
  await page.locator('[name="income_growth"]').fill("5");
  await page.locator('[name="medical_shock"]').fill("100000");
  await page.locator('[name="seed"]').fill("42");
+ await page.locator(".event-row [data-ev=year]").fill("1");
  const rows=page.locator(".goal-row");
  const count=await rows.count();
  for(let i=0;i<count;i++){
