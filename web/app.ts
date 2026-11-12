@@ -1,4 +1,4 @@
-import { simulate, type SimulationInput } from "./src/core/simulation.js";
+import { type SimulationInput } from "./src/core/simulation.js";
 import { calculateEmi } from "./src/core/emi.js";
 import { estimateSalary } from "./src/core/tax.js";
 import { answerMitra } from "./src/assistant/mitra.js";
@@ -16,19 +16,21 @@ const compact = (n: number) => n >= 1e7 ? `₹${(n / 1e7).toFixed(2)} Cr` : n >=
 const css = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const kinds: Kind[] = ["general", "education", "medical", "home"];
 let activeWorker: Worker | null = null;
+let cancelActiveSimulation: (() => void) | null = null;
 let workerRunId = 0;
 function runInWorker(input: SimulationInput): Promise<Result> {
   activeWorker?.terminate();
   const worker = new Worker(new URL("./src/workers/simulation.worker.js", import.meta.url), {type:"module"});
   activeWorker=worker; const id=++workerRunId;
   return new Promise((resolve,reject)=>{
+    cancelActiveSimulation = () => { worker.terminate(); activeWorker=null; cancelActiveSimulation=null; reject(new DOMException("Simulation cancelled","AbortError")); };
     worker.onmessage=(event:MessageEvent<any>)=>{
       const msg=event.data;if(msg.id!==id)return;
       if(msg.type==="progress") $("run").textContent="Simulating "+msg.done.toLocaleString("en-IN")+" / "+msg.total.toLocaleString("en-IN")+"…";
-      else if(msg.type==="result"){worker.terminate();activeWorker=null;resolve(msg.result);}
-      else if(msg.type==="error"){worker.terminate();activeWorker=null;reject(new Error(msg.message));}
+      else if(msg.type==="result"){worker.terminate();activeWorker=null;cancelActiveSimulation=null;resolve(msg.result);}
+      else if(msg.type==="error"){worker.terminate();activeWorker=null;cancelActiveSimulation=null;reject(new Error(msg.message));}
     };
-    worker.onerror=()=>{worker.terminate();activeWorker=null;reject(new Error("Simulation worker failed"));};
+    worker.onerror=()=>{worker.terminate();activeWorker=null;cancelActiveSimulation=null;reject(new Error("Simulation worker failed"));};
     worker.postMessage({type:"run",id,input});
   });
 }
@@ -151,7 +153,7 @@ $("sim").addEventListener("submit", async event => {
   const body = { years, savings: num("savings"), income: num("income"), sip: num("sip"), expense: num("expense"), ret: num("ret"), vol: num("vol"), income_growth: num("income_growth"), medical_shock: num("medical_shock"), seed: num("seed"), shocks: data.has("shocks"), goals, events: readEvents() };
   button.disabled = true; button.textContent = "Simulating possible lives…"; error.hidden = true;
   const cancel = el("button", "button button-quiet", "Cancel simulation"); cancel.type = "button"; cancel.id = "cancelSimulation"; button.parentElement?.append(cancel);
-  cancel.addEventListener("click", () => { activeWorker?.terminate(); activeWorker = null; workerRunId++; cancel.remove(); button.disabled = false; button.textContent = "Run the futures ↗"; error.textContent = "Simulation cancelled."; error.hidden = false; });
+  cancel.addEventListener("click", () => { cancelActiveSimulation?.(); cancelActiveSimulation = null; workerRunId++; cancel.remove(); button.disabled = false; button.textContent = "Run the futures ↗"; error.textContent = "Simulation cancelled."; error.hidden = false; });
   try {
     const payload = await runInWorker(body as SimulationInput);
     show(payload as Result); $("out").scrollIntoView({ behavior: "smooth", block: "start" });
