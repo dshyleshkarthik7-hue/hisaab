@@ -2,8 +2,10 @@ type Kind = "general" | "education" | "medical" | "home";
 interface Goal { name: string; at: number; cost: number; kind: Kind; flex: boolean }
 interface Fan { p10: number; p50: number; p90: number }
 interface ScenarioCard { label: string; score: number; depletion_odds: number; ending_median: number; goals: { name: string; odds: number }[] }
-interface NudgePayload { scenarios?: ScenarioCard[]; best?: { text: string; score: number } | null; text?: string; score?: number }
-interface Result { score: number; trials: number; seed: number; goals: { name: string; at: number; odds: number }[]; fan: Fan[]; ending: Fan; depletion_odds: number; nudge: NudgePayload | null }
+interface ShockCounterfactual { failures_prevented_if_removed: number; new_failures_in_counterfactual: number; net_failure_reduction: number; paired_trials: number }
+interface NudgePayload { scenarios?: ScenarioCard[]; best?: { text: string; score: number } | null; text?: string; score?: number; target_sip?: { target_score:number; monthly_sip:number; additional_monthly_sip:number; reachable:boolean; achieved_score?:number; trials?:number }; shock_counterfactuals?: Record<string, ShockCounterfactual> }
+interface SamplePath { ok:boolean; shocked:boolean; shock_events:{month:number;kind:string;amount?:number}[]; values:number[]; label:string; tags?:string[] }
+interface Result { score:number; trials:number; seed:number; goals:{name:string;at:number;odds:number}[]; fan:Fan[]; sample_paths?:SamplePath[]; ending:Fan; depletion_odds:number; diagnostics?:{weakest_goal?:{name:string;odds:number};failed_lives_with_shock_share?:number;shock_cooccurrence_note?:string}; nudge:NudgePayload|null }
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const inr = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
 const compact = (n: number) => n >= 1e7 ? `₹${(n / 1e7).toFixed(2)} Cr` : n >= 1e5 ? `₹${(n / 1e5).toFixed(1)} L` : inr(n);
@@ -43,7 +45,7 @@ function readGoals(): Goal[] {
     return { name: get("name").value.trim(), at: Number(get("at").value), cost: Number(get("cost").value), kind: get("kind").value as Kind, flex: (get("flex") as HTMLInputElement).checked };
   });
 }
-function drawFan(fan: Fan[]): void {
+function drawFan(fan: Fan[], samplePaths: SamplePath[] = []): void {
   const canvas = $("fan") as HTMLCanvasElement, ctx = canvas.getContext("2d"); if (!ctx || fan.length < 2) return;
   const W = canvas.width, H = canvas.height, left = 82, right = 18, topPad = 20, bottom = 42;
   const max = Math.max(1, ...fan.map(v => v.p90)) * 1.08, n = fan.length - 1;
@@ -55,6 +57,7 @@ function drawFan(fan: Fan[]): void {
   ctx.beginPath(); fan.forEach((v, i) => ctx[i ? "lineTo" : "moveTo"](px(i), py(v.p90)));
   for (let i = n; i >= 0; i--) ctx.lineTo(px(i), py(fan[i].p10));
   ctx.closePath(); ctx.fillStyle = css("--chart-band"); ctx.fill();
+  for (const path of samplePaths) { if (!Array.isArray(path.values)) continue; ctx.beginPath(); path.values.forEach((v,i)=>ctx[i?"lineTo":"moveTo"](px(i),py(v))); ctx.strokeStyle=path.ok?"rgba(40,150,112,0.28)":"rgba(217,104,82,0.34)"; ctx.lineWidth=path.label==="worst_surviving"?2:1.15; ctx.stroke(); }
   ctx.beginPath(); fan.forEach((v, i) => ctx[i ? "lineTo" : "moveTo"](px(i), py(v.p50)));
   ctx.strokeStyle = css("--chart-line"); ctx.lineWidth = 3; ctx.stroke();
 }
@@ -70,7 +73,11 @@ function show(r: Result): void {
   $("endingLow").textContent = compact(r.ending.p10);
   $("endingHigh").textContent = compact(r.ending.p90);
   $("depletion").textContent = `${Math.round(r.depletion_odds * 100)}%`;
-  drawFan(r.fan);
+  drawFan(r.fan, r.sample_paths || []);
+  const diagnostic=r.diagnostics||{}; const weakest=diagnostic.weakest_goal; const diagNode=$("diagnostics");
+  if(diagNode) diagNode.textContent=weakest ? "Most fragile goal: "+weakest.name+" ("+Math.round(weakest.odds*100)+"% funded) · Failed lives that also experienced a shock: "+Math.round((diagnostic.failed_lives_with_shock_share||0)*100)+"%" : "";
+  const shockedPath=(r.sample_paths||[]).find(path=>path.shock_events&&path.shock_events.length); const chartNote=$("chartNote");
+  if(chartNote) chartNote.textContent="25 sampled household paths · Green: all goals funded · Coral: at least one goal missed"+(shockedPath?" · Example shock: "+shockedPath.shock_events.map(event=>event.kind+" at month "+event.month).join(", "):"");
   const odds = $("odds"); odds.replaceChildren();
   for (const g of r.goals) {
     const row = el("div", "odds-row"), title = el("div", "odds-title");
@@ -84,10 +91,10 @@ function show(r: Result): void {
   const scenarios = n && Array.isArray(n.scenarios) ? n.scenarios : null;
   if (scenarios && scenarios.length >= 2) {
     card.hidden = false;
-    $("nudgeTitle").textContent = language === "te" ? "మూడు సన్నివేశాల పోలిక" : "Three-way scenario comparison";
+    $("nudgeTitle").textContent = language === "te" ? "నాలుగు సన్నివేశాల పోలిక" : "Four-way scenario comparison";
     $("nudgeText").textContent = language === "te"
-      ? "అదే యాదృచ్ఛిక జీవితాలను ఉపయోగించి బేస్‌లైన్ మరియు రెండు ప్రత్యామ్నాయాలు."
-      : "Baseline and two alternatives using the exact same random lives.";
+      ? "అదే యాదృచ్ఛిక జీవితాలతో బేస్‌లైన్ మరియు మూడు ప్రత్యామ్నాయాలు."
+      : "Baseline and three alternatives using the exact same random lives.";
     if (compare) {
       compare.innerHTML = "";
       scenarios.forEach((s, idx) => {
@@ -200,7 +207,7 @@ const translations: Record<string,string> = {
   "ENDING WEALTH · TODAY'S RUPEE VALUE":"చివరి సంపద · నేటి రూపాయి విలువ",
   "Median ending corpus":"మధ్యస్థ చివరి నిధి",
   "CORPUS DEPLETION":"నిధి పూర్తిగా ఖಾಲీ అయ్యే అవకాశం",
-  "How the corpus could evolve":"உங்கள் நிதி வளர்ச்சி" ,
+  "How the corpus could evolve":"మీ నిధి ఎలా వృద్ధి చెందవచ్చు",
   "Goal survival map":"లక్ష్యాల సాధ్యత మ్యాప్",
   "04 / QUICK CHECKS":"04 / త్వరిత లెక్కలు",
   "Everyday money maths":"రోజువారీ ఆర్థిక లెక్కలు",
@@ -307,7 +314,7 @@ $("pdfReport").addEventListener("click",()=>{
 const originalShow = show;
 (show as any) = (result:Result) => { originalShow(result); lastResult=result; };
 const originalSubmit = $("sim").onsubmit;
-$("sim").addEventListener("submit",()=>{ const f=$("sim") as HTMLFormElement; const d=new FormData(f); const n=(k:string)=>Number(d.get(k)); lastInput={years:n("years"),savings:n("savings"),income:n("income"),expense:n("expense"),sip:n("sip"),ret:n("ret"),vol:n("vol"),income_growth:n("income_growth"),goals:readGoals(),events:readEvents()}; });
+$("sim").addEventListener("submit",()=>{ const f=$("sim") as HTMLFormElement; const d=new FormData(f); const n=(k:string)=>Number(d.get(k)); lastInput={years:n("years"),savings:n("savings"),income:n("income"),expense:n("expense"),sip:n("sip"),ret:n("ret"),vol:n("vol"),income_growth:n("income_growth"),medical_shock:n("medical_shock"),seed:n("seed"),shocks:d.has("shocks"),goals:readGoals(),events:readEvents()}; });
 addEventRow({label:"Career change / salary increase",year:3,kind:"income_change",amount:15000});
 translateStatic();
 
@@ -391,7 +398,7 @@ async function askMitra(question: string): Promise<void> {
   try {
     const ctx: any = {};
     if (lastResult) {
-      ctx.simulation = { score: lastResult.score, depletion_odds: lastResult.depletion_odds };
+      ctx.inputs=lastInput; ctx.simulation={score:lastResult.score,depletion_odds:lastResult.depletion_odds,diagnostics:lastResult.diagnostics,shock_counterfactuals:lastResult.nudge&&lastResult.nudge.shock_counterfactuals,target_sip:lastResult.nudge&&lastResult.nudge.target_sip};
     }
     const res = await fetch("/api/mitra", {
       method: "POST",
