@@ -78,7 +78,7 @@ The browser-only migration is tracked in [PR #13](https://github.com/dshyleshkar
 - EMI calculator, worker progress/cancellation, local bilingual Mitra and official reference links.
 - Direct A4 PDF downloads via pdfnative with bundled Noto Telugu shaping and scenario-analysis sections.
 - Cloudflare Pages security headers, static build and manual production-deploy workflow.
-- CI runs the Python reference suite, generated Python golden fixtures, exact browser-vs-Python comparisons, TypeScript build, a 10,000-trial × 40-year baseline benchmark, 4× CPU-throttled Chromium worker testing and a browser PDF download smoke test. Scenario Lab and target-SIP bisection are on demand to avoid multiplying the baseline runtime for every run.
+- CI runs the Python reference suite, generated Python golden fixtures, exact browser-vs-Python comparisons, TypeScript build, a 10,000-trial × 40-year baseline benchmark, 4× CPU-throttled Chromium core testing and a mobile-viewport PDF download/text-extraction test. Latest observed timings: 3.56 s in the browser Worker and 12.27 s at 4× CPU throttling in the core benchmark (390×844 viewport; not a physical-device test). Scenario Lab and target-SIP bisection are on demand to avoid multiplying the baseline runtime for every run.
 
 ### Verified limitations / go-live gates
 - The 10k × 40-year benchmark currently measures the baseline simulation on a GitHub-hosted Linux runner (latest observed ~3.3 seconds), not a physical mobile device. Do a real-device performance pass before launch.
